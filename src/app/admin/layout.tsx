@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AreaChart, Bell, Building, Users } from "lucide-react";
+import { AreaChart, Bell, Building, Users, Wrench } from "lucide-react";
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/admin", icon: <AreaChart />, label: "Panel de control" },
   { href: "/admin/users", icon: <Users />, label: "Gestión de usuarios" },
+  { href: "/admin/services", icon: <Wrench />, label: "Gestionar Servicios" },
   { href: "#", icon: <Building />, label: "Corporativo" },
   { href: "#", icon: <Bell />, label: "Alertas" },
 ];
