@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, ClipboardList } from "lucide-react";
+import { Archive, ClipboardList, HandCoins } from "lucide-react";
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/staff", icon: <ClipboardList />, label: "Panel de Tareas" },
   { href: "/staff/inventory", icon: <Archive />, label: "Inventario" },
+  { href: "/staff/services", icon: <HandCoins />, label: "Servicios" },
 ];
 
 export default function StaffLayout({

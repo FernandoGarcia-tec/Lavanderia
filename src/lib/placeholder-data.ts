@@ -56,3 +56,10 @@ export const inventoryItems = [
     { id: 'INV004', name: 'Bolsas para Ropa', category: 'Suministro', stock: 50, status: 'En Stock' },
     { id: 'INV005', name: 'Quitamanchas', category: 'Consumible', stock: 25, status: 'En Stock' },
 ];
+
+export const services = [
+    { id: 'SRV001', name: 'Lavado y Plegado', price: 15.00, paymentStatus: 'Pagado' },
+    { id: 'SRV002', name: 'Lavado en Seco', price: 25.50, paymentStatus: 'Pendiente' },
+    { id: 'SRV003', name: 'Ropa de Cama y Edredones', price: 30.00, paymentStatus: 'Pagado' },
+    { id: 'SRV004', name: 'Artículos Especiales', price: 40.00, paymentStatus: 'Pagado' },
+];
