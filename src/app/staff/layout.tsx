@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/staff", icon: <ClipboardList />, label: "Panel de Tareas" },
   { href: "/staff/inventory", icon: <Archive />, label: "Inventario" },
-  { href: "/staff/services", icon: <HandCoins />, label: "Servicios" },
+  { href: "/staff/services", icon: <HandCoins />, label: "Registrar Pedido" },
 ];
 
 export default function StaffLayout({
