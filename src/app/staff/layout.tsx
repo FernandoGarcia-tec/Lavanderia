@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/staff", icon: <ClipboardList />, label: "Task Dashboard" },
-  { href: "/staff/inventory", icon: <Archive />, label: "Inventory" },
+  { href: "/staff", icon: <ClipboardList />, label: "Panel de Tareas" },
+  { href: "/staff/inventory", icon: <Archive />, label: "Inventario" },
 ];
 
 export default function StaffLayout({
@@ -60,12 +60,12 @@ export default function StaffLayout({
         <SidebarFooter>
           <Separator className="my-2" />
           <Button variant="outline" asChild>
-             <Link href="/">Exit Staff</Link>
+             <Link href="/">Salir de Personal</Link>
           </Button>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader title="Staff Portal" />
+        <DashboardHeader title="Portal del Personal" />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>

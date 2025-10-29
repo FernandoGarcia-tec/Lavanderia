@@ -30,26 +30,26 @@ export default function InventoryPage() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-headline">Inventory Management</CardTitle>
+          <CardTitle className="font-headline">Gestión de Inventario</CardTitle>
           <CardDescription>
-            Monitor, update, and manage stock levels.
+            Supervisa, actualiza y gestiona los niveles de stock.
           </CardDescription>
         </div>
         <Button size="sm" className="gap-1">
           <PlusCircle className="h-4 w-4" />
-          Add Item
+          Añadir Artículo
         </Button>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Item Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Stock Level</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Nombre del Artículo</TableHead>
+              <TableHead>Categoría</TableHead>
+              <TableHead>Nivel de Stock</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Acciones</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -60,7 +60,7 @@ export default function InventoryPage() {
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.stock}</TableCell>
                 <TableCell>
-                  <Badge variant={item.status === 'Low Stock' ? 'destructive' : 'default'}>
+                  <Badge variant={item.status === 'Stock Bajo' ? 'destructive' : 'default'}>
                     {item.status}
                   </Badge>
                 </TableCell>
@@ -73,9 +73,9 @@ export default function InventoryPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Update Stock</DropdownMenuItem>
-                      <DropdownMenuItem>Edit Item</DropdownMenuItem>
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                      <DropdownMenuItem>Actualizar Stock</DropdownMenuItem>
+                      <DropdownMenuItem>Editar Artículo</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -33,7 +34,7 @@ import Link from "next/link";
 export default function AdminDashboard() {
   const chartConfig = {
     services: {
-      label: "Services",
+      label: "Servicios",
       color: "hsl(var(--primary))",
     },
   };
@@ -43,9 +44,9 @@ export default function AdminDashboard() {
       <div className="space-y-6 lg:col-span-2">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Monthly Services Report</CardTitle>
+            <CardTitle className="font-headline">Informe Mensual de Servicios</CardTitle>
             <CardDescription>
-              Overview of services provided in the last 6 months.
+              Resumen de los servicios prestados en los últimos 6 meses.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -86,9 +87,9 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">New Client Approvals</CardTitle>
+            <CardTitle className="font-headline">Aprobaciones de Nuevos Clientes</CardTitle>
             <CardDescription>
-              Review and approve new client registrations.
+              Revisa y aprueba los registros de nuevos clientes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -123,7 +124,7 @@ export default function AdminDashboard() {
            <CardFooter>
             <Button variant="outline" className="w-full" asChild>
                 <Link href="/admin/users">
-                Manage All Users <ArrowRight className="ml-2 h-4 w-4" />
+                Gestionar todos los usuarios <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
             </Button>
           </CardFooter>
@@ -131,9 +132,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Critical Stock Alerts</CardTitle>
+            <CardTitle className="font-headline">Alertas de Stock Crítico</CardTitle>
             <CardDescription>
-              Items that have fallen below the stock threshold.
+              Artículos que han caído por debajo del umbral de stock.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -142,17 +143,17 @@ export default function AdminDashboard() {
                 <div>
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    In stock: {item.stock}
+                    En stock: {item.stock}
                   </p>
                 </div>
-                <Badge variant="destructive">Low Stock</Badge>
+                <Badge variant="destructive">Stock Bajo</Badge>
               </div>
             ))}
           </CardContent>
           <CardFooter>
              <Button variant="outline" className="w-full" asChild>
                 <Link href="/staff/inventory">
-                Manage Inventory <ArrowRight className="ml-2 h-4 w-4" />
+                Gestionar Inventario <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
             </Button>
           </CardFooter>

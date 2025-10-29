@@ -9,18 +9,18 @@ export const newClients = [
 ];
 
 export const stockAlerts = [
-  { id: 1, name: 'Premium Detergent', stock: 8, threshold: 10 },
-  { id: 2, name: 'Fabric Softener', stock: 5, threshold: 5 },
-  { id: 3, name: 'Hangers Pack', stock: 15, threshold: 20 },
+  { id: 1, name: 'Detergente Premium', stock: 8, threshold: 10 },
+  { id: 2, name: 'Suavizante', stock: 5, threshold: 5 },
+  { id: 3, name: 'Paquete de Perchas', stock: 15, threshold: 20 },
 ];
 
 export const servicesChartData = [
-  { month: 'January', services: Math.floor(Math.random() * 500) + 100 },
-  { month: 'February', services: Math.floor(Math.random() * 500) + 100 },
-  { month: 'March', services: Math.floor(Math.random() * 500) + 100 },
-  { month: 'April', services: Math.floor(Math.random() * 500) + 100 },
-  { month: 'May', services: Math.floor(Math.random() * 500) + 100 },
-  { month: 'June', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Enero', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Febrero', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Marzo', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Abril', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Mayo', services: Math.floor(Math.random() * 500) + 100 },
+  { month: 'Junio', services: Math.floor(Math.random() * 500) + 100 },
 ];
 
 export const users = [
@@ -32,27 +32,27 @@ export const users = [
 ];
 
 export const appointments = [
-    { id: 'APT001', service: 'Dry Cleaning', date: '2024-08-15', time: '10:00 AM', status: 'Confirmed' },
-    { id: 'APT002', service: 'Wash & Fold', date: '2024-08-18', time: '02:00 PM', status: 'Confirmed' },
+    { id: 'APT001', service: 'Lavado en Seco', date: '2024-08-15', time: '10:00 AM', status: 'Confirmada' },
+    { id: 'APT002', service: 'Lavado y Plegado', date: '2024-08-18', time: '02:00 PM', status: 'Confirmada' },
 ];
 
 export const orders = [
-    { id: 'ORD551', date: '2024-07-28', service: 'Suit Dry Cleaning', total: 25.00, status: 'Ready for Pickup' },
-    { id: 'ORD550', date: '2024-07-22', service: 'Bedding Wash', total: 30.00, status: 'Completed' },
-    { id: 'ORD549', date: '2024-07-15', service: 'Express Wash', total: 18.50, status: 'Completed' },
+    { id: 'ORD551', date: '2024-07-28', service: 'Limpieza de Traje en Seco', total: 25.00, status: 'Listo para Recoger' },
+    { id: 'ORD550', date: '2024-07-22', service: 'Lavado de Ropa de Cama', total: 30.00, status: 'Completado' },
+    { id: 'ORD549', date: '2024-07-15', service: 'Lavado Express', total: 18.50, status: 'Completado' },
 ];
 
 export const staffTasks = [
-    { id: 'TSK101', orderId: 'ORD553', client: 'Liam Smith', service: 'Wedding Dress Cleaning', dueDate: '2024-08-10', status: 'In Progress' },
-    { id: 'TSK102', orderId: 'ORD554', client: 'Olivia Williams', service: 'Leather Jacket Care', dueDate: '2024-08-11', status: 'Pending' },
-    { id: 'TSK103', orderId: 'ORD555', client: 'Noah Brown', service: 'Bulk Wash & Fold', dueDate: '2024-08-11', status: 'Pending' },
-    { id: 'TSK104', orderId: 'ORD556', client: 'Ava Jones', service: 'Drapery Cleaning', dueDate: '2024-08-12', status: 'Completed' },
+    { id: 'TSK101', orderId: 'ORD553', client: 'Liam Smith', service: 'Limpieza de Vestido de Novia', dueDate: '2024-08-10', status: 'En Progreso' },
+    { id: 'TSK102', orderId: 'ORD554', client: 'Olivia Williams', service: 'Cuidado de Chaqueta de Cuero', dueDate: '2024-08-11', status: 'Pendiente' },
+    { id: 'TSK103', orderId: 'ORD555', client: 'Noah Brown', service: 'Lavado y Plegado a Granel', dueDate: '2024-08-11', status: 'Pendiente' },
+    { id: 'TSK104', orderId: 'ORD556', client: 'Ava Jones', service: 'Limpieza de Cortinas', dueDate: '2024-08-12', status: 'Completado' },
 ];
 
 export const inventoryItems = [
-    { id: 'INV001', name: 'Premium Detergent', category: 'Consumable', stock: 8, status: 'Low Stock' },
-    { id: 'INV002', name: 'Fabric Softener', category: 'Consumable', stock: 5, status: 'Low Stock' },
-    { id: 'INV003', name: 'Hangers Pack', category: 'Supply', stock: 15, status: 'Low Stock' },
-    { id: 'INV004', name: 'Garment Bags', category: 'Supply', stock: 50, status: 'In Stock' },
-    { id: 'INV005', name: 'Stain Remover', category: 'Consumable', stock: 25, status: 'In Stock' },
+    { id: 'INV001', name: 'Detergente Premium', category: 'Consumible', stock: 8, status: 'Stock Bajo' },
+    { id: 'INV002', name: 'Suavizante', category: 'Consumible', stock: 5, status: 'Stock Bajo' },
+    { id: 'INV003', name: 'Paquete de Perchas', category: 'Suministro', stock: 15, status: 'Stock Bajo' },
+    { id: 'INV004', name: 'Bolsas para Ropa', category: 'Suministro', stock: 50, status: 'En Stock' },
+    { id: 'INV005', name: 'Quitamanchas', category: 'Consumible', stock: 25, status: 'En Stock' },
 ];

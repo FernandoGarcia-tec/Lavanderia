@@ -31,25 +31,25 @@ export default function UsersPage() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-            <CardTitle className="font-headline">User Management</CardTitle>
+            <CardTitle className="font-headline">Gestión de Usuarios</CardTitle>
             <CardDescription>
-                View, manage, and approve users on the platform.
+                Ver, gestionar y aprobar usuarios en la plataforma.
             </CardDescription>
         </div>
         <Button size="sm" className="gap-1">
             <PlusCircle className="h-4 w-4" />
-            Add User
+            Añadir Usuario
         </Button>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Date Added</TableHead>
+              <TableHead>Usuario</TableHead>
+              <TableHead>Rol</TableHead>
+              <TableHead>Fecha de Alta</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Acciones</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -72,7 +72,7 @@ export default function UsersPage() {
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.role === 'Admin' ? 'default' : user.role === 'Staff' ? 'secondary' : 'outline'}>
-                    {user.role}
+                    {user.role === 'Admin' ? 'Administrador' : user.role === 'Staff' ? 'Personal' : 'Cliente'}
                   </Badge>
                 </TableCell>
                 <TableCell>{user.dateAdded}</TableCell>
@@ -85,9 +85,9 @@ export default function UsersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                      <DropdownMenuItem>Editar</DropdownMenuItem>
+                      <DropdownMenuItem>Eliminar</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

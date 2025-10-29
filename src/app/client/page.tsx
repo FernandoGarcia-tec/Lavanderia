@@ -26,9 +26,9 @@ export default function ClientDashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle className="font-headline">Upcoming Appointments</CardTitle>
+            <CardTitle className="font-headline">Próximas Citas</CardTitle>
             <CardDescription>
-              Check the status of your scheduled services.
+              Consulta el estado de tus servicios programados.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1">
@@ -42,7 +42,7 @@ export default function ClientDashboard() {
                     <div>
                       <p className="font-semibold">{apt.service}</p>
                       <p className="text-sm text-muted-foreground">
-                        {apt.date} at {apt.time}
+                        {apt.date} a las {apt.time}
                       </p>
                     </div>
                     <Badge variant="secondary" className="ml-auto mt-1">{apt.status}</Badge>
@@ -51,14 +51,14 @@ export default function ClientDashboard() {
               </div>
             ) : (
               <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center">
-                 <p className="text-muted-foreground">No upcoming appointments.</p>
+                 <p className="text-muted-foreground">No hay próximas citas.</p>
               </div>
             )}
           </CardContent>
           <CardFooter>
              <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
                 <Link href="/client/schedule">
-                Schedule a New Service <ArrowRight className="ml-2 h-4 w-4" />
+                Programar un Nuevo Servicio <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
             </Button>
           </CardFooter>
@@ -66,21 +66,21 @@ export default function ClientDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Quick Actions</CardTitle>
+            <CardTitle className="font-headline">Acciones Rápidas</CardTitle>
             <CardDescription>
-              One-click access to your most common tasks.
+              Acceso con un clic a tus tareas más comunes.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
              <Button variant="outline" size="lg" className="h-24 flex-col gap-1" asChild>
                 <Link href="/client/schedule">
                     <Calendar className="h-6 w-6" />
-                    Schedule
+                    Programar
                 </Link>
              </Button>
              <Button variant="outline" size="lg" className="h-24 flex-col gap-1" disabled>
                 <Clock className="h-6 w-6" />
-                View History
+                Ver Historial
              </Button>
           </CardContent>
         </Card>
@@ -88,17 +88,17 @@ export default function ClientDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Recent Order History</CardTitle>
-          <CardDescription>A summary of your most recent orders.</CardDescription>
+          <CardTitle className="font-headline">Historial de Pedidos Recientes</CardTitle>
+          <CardDescription>Un resumen de tus pedidos más recientes.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>ID de Pedido</TableHead>
+                <TableHead>Servicio</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -109,10 +109,10 @@ export default function ClientDashboard() {
                   <TableCell>{order.service}</TableCell>
                   <TableCell>{order.date}</TableCell>
                   <TableCell>
-                    <Badge variant={order.status === 'Ready for Pickup' ? 'default' : 'outline'}
-                        className={order.status === 'Ready for Pickup' ? 'bg-green-600 text-white' : ''}
+                    <Badge variant={order.status === 'Listo para Recoger' ? 'default' : 'outline'}
+                        className={order.status === 'Listo para Recoger' ? 'bg-green-600 text-white' : ''}
                     >
-                      {order.status === 'Ready for Pickup' && <CheckCircle className="mr-1 h-3 w-3" />}
+                      {order.status === 'Listo para Recoger' && <CheckCircle className="mr-1 h-3 w-3" />}
                       {order.status}
                     </Badge>
                   </TableCell>

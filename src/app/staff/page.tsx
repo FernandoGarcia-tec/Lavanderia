@@ -32,24 +32,24 @@ export default function StaffDashboard() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-headline">Pending Tasks</CardTitle>
+          <CardTitle className="font-headline">Tareas Pendientes</CardTitle>
           <CardDescription>
-            Manage and update the status of customer orders.
+            Gestiona y actualiza el estado de los pedidos de los clientes.
           </CardDescription>
         </div>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
                     <ListFilter className="h-4 w-4" />
-                    Filter
+                    Filtrar
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                <DropdownMenuLabel>Filtrar por Estado</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem checked>Pending</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem checked>In Progress</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Completed</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked>Pendiente</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked>En Progreso</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>Completado</DropdownMenuCheckboxItem>
             </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
@@ -57,13 +57,13 @@ export default function StaffDashboard() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Order</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Pedido</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Servicio</TableHead>
+              <TableHead>Fecha de Entrega</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Acciones</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -75,7 +75,7 @@ export default function StaffDashboard() {
                 <TableCell>{task.service}</TableCell>
                 <TableCell>{task.dueDate}</TableCell>
                 <TableCell>
-                  <Badge variant={task.status === 'Pending' ? 'destructive' : task.status === 'In Progress' ? 'secondary' : 'default'}>
+                  <Badge variant={task.status === 'Pendiente' ? 'destructive' : task.status === 'En Progreso' ? 'secondary' : 'default'}>
                     {task.status}
                   </Badge>
                 </TableCell>
@@ -88,11 +88,11 @@ export default function StaffDashboard() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                      <DropdownMenuItem>Mark In Progress</DropdownMenuItem>
-                      <DropdownMenuItem>Mark Completed</DropdownMenuItem>
+                      <DropdownMenuLabel>Actualizar Estado</DropdownMenuLabel>
+                      <DropdownMenuItem>Marcar en Progreso</DropdownMenuItem>
+                      <DropdownMenuItem>Marcar Completado</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
+                      <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

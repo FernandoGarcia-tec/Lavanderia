@@ -26,8 +26,8 @@ export default function SchedulePage() {
 
   const handleSchedule = () => {
     toast({
-      title: "Service Scheduled!",
-      description: "Your appointment has been successfully booked.",
+      title: "¡Servicio Programado!",
+      description: "Tu cita ha sido reservada con éxito.",
     });
   };
 
@@ -35,40 +35,40 @@ export default function SchedulePage() {
     <div className="grid gap-6 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Schedule a New Service</CardTitle>
+          <CardTitle className="font-headline">Programar un Nuevo Servicio</CardTitle>
           <CardDescription>
-            Select a date, service, and time for your appointment.
+            Selecciona una fecha, servicio y hora para tu cita.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>1. Select a Service</Label>
+            <Label>1. Selecciona un Servicio</Label>
             <Select>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a service" />
+                <SelectValue placeholder="Elige un servicio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="wash-fold">Wash & Fold</SelectItem>
-                <SelectItem value="dry-clean">Dry Cleaning</SelectItem>
-                <SelectItem value="bedding">Bedding & Comforters</SelectItem>
-                <SelectItem value="specialty">Specialty Items</SelectItem>
+                <SelectItem value="wash-fold">Lavado y Plegado</SelectItem>
+                <SelectItem value="dry-clean">Lavado en Seco</SelectItem>
+                <SelectItem value="bedding">Ropa de Cama y Edredones</SelectItem>
+                <SelectItem value="specialty">Artículos Especiales</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>2. Select a Pickup Time</Label>
+            <Label>2. Selecciona una Hora de Recogida</Label>
             <Select>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a time slot" />
+                <SelectValue placeholder="Elige un horario" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="morning">Morning (9 AM - 12 PM)</SelectItem>
-                <SelectItem value="afternoon">Afternoon (1 PM - 4 PM)</SelectItem>
-                <SelectItem value="evening">Evening (5 PM - 8 PM)</SelectItem>
+                <SelectItem value="morning">Mañana (9 AM - 12 PM)</SelectItem>
+                <SelectItem value="afternoon">Tarde (1 PM - 4 PM)</SelectItem>
+                <SelectItem value="evening">Noche (5 PM - 8 PM)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full" onClick={handleSchedule}>Confirm Appointment</Button>
+          <Button className="w-full" onClick={handleSchedule}>Confirmar Cita</Button>
         </CardContent>
       </Card>
       <div className="flex items-start justify-center">

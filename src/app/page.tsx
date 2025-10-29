@@ -22,42 +22,42 @@ export default function LoginPage() {
         </div>
         <Card className="w-full">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="font-headline text-2xl">Bienvenido de Vuelta</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account.
+              Introduce tus credenciales para acceder a tu cuenta.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="nombre@ejemplo.com"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Contraseña</Label>
                   <Link
                     href="#"
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    Forgot password?
+                    ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
                 <Input id="password" type="password" required />
               </div>
               <Button type="submit" className="w-full">
-                Sign In
+                Iniciar Sesión
               </Button>
             </form>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
+              ¿No tienes una cuenta?{" "}
               <Link href="/register" className="font-medium text-primary hover:underline">
-                Sign up
+                Regístrate
               </Link>
             </div>
           </CardContent>
@@ -65,21 +65,21 @@ export default function LoginPage() {
             <div className="relative w-full">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                PROTOTYPE
+                PROTOTIPO
               </span>
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              For demonstration purposes, you can enter a dashboard directly.
+              Para fines de demostración, puedes entrar a un panel directamente.
             </p>
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
               <Button variant="outline" asChild>
-                <Link href="/client">Client</Link>
+                <Link href="/client">Cliente</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/staff">Staff</Link>
+                <Link href="/staff">Personal</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/admin">Admin</Link>
+                <Link href="/admin">Administrador</Link>
               </Button>
             </div>
           </CardFooter>

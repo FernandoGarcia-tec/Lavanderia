@@ -22,9 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/client", icon: <LayoutDashboard />, label: "Dashboard" },
-  { href: "/client/schedule", icon: <Calendar />, label: "Schedule Service" },
-  { href: "#", icon: <History />, label: "Order History" },
+  { href: "/client", icon: <LayoutDashboard />, label: "Panel de control" },
+  { href: "/client/schedule", icon: <Calendar />, label: "Programar Servicio" },
+  { href: "#", icon: <History />, label: "Historial de Pedidos" },
 ];
 
 export default function ClientLayout({
@@ -61,12 +61,12 @@ export default function ClientLayout({
         <SidebarFooter>
           <Separator className="my-2" />
           <Button variant="outline" asChild>
-             <Link href="/">Exit Client</Link>
+             <Link href="/">Salir de Cliente</Link>
           </Button>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader title="Client Portal" />
+        <DashboardHeader title="Portal del Cliente" />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>

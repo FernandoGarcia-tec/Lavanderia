@@ -20,38 +20,38 @@ export default function RegisterPage() {
         </div>
         <Card className="w-full">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
+            <CardTitle className="font-headline text-2xl">Crear una Cuenta</CardTitle>
             <CardDescription>
-              Join the ANGY platform to manage your services.
+              Únete a la plataforma ANGY para gestionar tus servicios.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Nombre Completo</Label>
                 <Input id="name" placeholder="John Doe" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="nombre@ejemplo.com"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <Input id="password" type="password" required />
               </div>
               <Button type="submit" className="w-full">
-                Sign Up
+                Registrarse
               </Button>
             </form>
             <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
+              ¿Ya tienes una cuenta?{" "}
               <Link href="/" className="font-medium text-primary hover:underline">
-                Sign In
+                Iniciar Sesión
               </Link>
             </div>
           </CardContent>

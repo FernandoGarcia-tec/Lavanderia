@@ -22,10 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: "/admin", icon: <AreaChart />, label: "Dashboard" },
-  { href: "/admin/users", icon: <Users />, label: "User Management" },
-  { href: "#", icon: <Building />, label: "Corporate" },
-  { href: "#", icon: <Bell />, label: "Alerts" },
+  { href: "/admin", icon: <AreaChart />, label: "Panel de control" },
+  { href: "/admin/users", icon: <Users />, label: "Gestión de usuarios" },
+  { href: "#", icon: <Building />, label: "Corporativo" },
+  { href: "#", icon: <Bell />, label: "Alertas" },
 ];
 
 export default function AdminLayout({
@@ -62,12 +62,12 @@ export default function AdminLayout({
         <SidebarFooter>
           <Separator className="my-2" />
           <Button variant="outline" asChild>
-             <Link href="/">Exit Admin</Link>
+             <Link href="/">Salir de Administrador</Link>
           </Button>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader title="Administrator" />
+        <DashboardHeader title="Administrador" />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
