@@ -15,10 +15,10 @@ function Test-Requests {
     try {
       $t = Measure-Command { Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 | Out-Null }
       $ms = [math]::Round($t.TotalMilliseconds,2)
-      Write-Output "Request $i: $ms ms"
+      Write-Output "Request ${i}: ${ms} ms"
       $times += $ms
     } catch {
-      Write-Output "Request $i: ERROR - $($_.Exception.Message)"
+      Write-Output "Request ${i}: ERROR - $($_.Exception.Message)"
       $times += [double]::NaN
     }
   }

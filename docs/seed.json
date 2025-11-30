@@ -1,0 +1,155 @@
+{
+  "users": [
+    {
+      "uid": "admin001",
+      "nombreCompleto": "Admin General",
+      "email": "admin@angy.com",
+      "telefono": "5551112233",
+      "rol": "admin",
+      "estatusCuenta": "activo",
+      "direccion": {
+        "calle": "Av. Principal 123",
+        "cp": "11500",
+        "ciudad": "Ciudad de México"
+      },
+      "fechaRegistro": {
+        "_seconds": 1672531200,
+        "_nanoseconds": 0
+      }
+    },
+    {
+      "uid": "staff001",
+      "nombreCompleto": "Carlos Pérez",
+      "email": "personal@angy.com",
+      "telefono": "5554445566",
+      "rol": "personal",
+      "estatusCuenta": "activo",
+      "direccion": {
+        "calle": "Calle del Trabajo 45",
+        "cp": "11600",
+        "ciudad": "Ciudad de México"
+      },
+      "fechaRegistro": {
+        "_seconds": 1672617600,
+        "_nanoseconds": 0
+      }
+    },
+    {
+      "uid": "client001",
+      "nombreCompleto": "Ana Torres",
+      "email": "cliente@example.com",
+      "telefono": "5557778899",
+      "rol": "cliente",
+      "estatusCuenta": "activo",
+      "direccion": {
+        "calle": "Calle Ficticia 789",
+        "cp": "11700",
+        "ciudad": "Ciudad de México"
+      },
+      "fechaRegistro": {
+        "_seconds": 1672704000,
+        "_nanoseconds": 0
+      }
+    }
+  ],
+  "services": [
+    {
+      "id": "SERV001",
+      "nombre": "Lavado por Kilo",
+      "descripcion": "Lavado y secado de ropa general, entregada doblada.",
+      "precioActual": 25.50,
+      "categoria": "Lavanderia",
+      "activo": true
+    },
+    {
+      "id": "SERV002",
+      "nombre": "Planchado de Camisa",
+      "descripcion": "Planchado profesional para camisas de vestir.",
+      "precioActual": 15.00,
+      "categoria": "Planchaduria",
+      "activo": true
+    },
+    {
+      "id": "SERV003",
+      "nombre": "Limpieza de Edredón",
+      "descripcion": "Limpieza profunda para edredones de cualquier tamaño.",
+      "precioActual": 120.00,
+      "categoria": "Lavanderia",
+      "activo": true
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD001",
+      "idCliente": "client001",
+      "idPersonal": "staff001",
+      "estatus": "en_proceso",
+      "estatusPago": "pendiente",
+      "montoTotal": 55.50,
+      "fechaRecepcion": {
+        "_seconds": 1675209600,
+        "_nanoseconds": 0
+      },
+      "fechaEntregaEstimada": {
+        "_seconds": 1675382400,
+        "_nanoseconds": 0
+      },
+      "items": [
+        {
+          "id": "ITEM001",
+          "idServicio": "SERV001",
+          "nombreServicio": "Lavado por Kilo",
+          "cantidad": 2,
+          "precioUnitario": 25.50,
+          "subtotal": 51.00
+        },
+        {
+          "id": "ITEM002",
+          "idServicio": "SERV002",
+          "nombreServicio": "Planchado de Camisa",
+          "cantidad": 3,
+          "precioUnitario": 15.00,
+          "subtotal": 45.00
+        }
+      ]
+    }
+  ],
+  "inventory": [
+    {
+      "id": "INV001",
+      "nombreInsumo": "Detergente Líquido (Litros)",
+      "stockActual": 50,
+      "stockCritico": 10,
+      "unidad": "litro"
+    },
+    {
+      "id": "INV002",
+      "nombreInsumo": "Suavizante (Litros)",
+      "stockActual": 30,
+      "stockCritico": 5,
+      "unidad": "litro"
+    },
+    {
+      "id": "INV003",
+      "nombreInsumo": "Ganchos de Ropa (Unidades)",
+      "stockActual": 200,
+      "stockCritico": 50,
+      "unidad": "unidad"
+    }
+  ],
+  "purchaseRequests": [
+    {
+      "id": "REQ001",
+      "idInsumo": "INV001",
+      "nombreInsumo": "Detergente Líquido (Litros)",
+      "idSolicitante": "staff001",
+      "nombreSolicitante": "Carlos Pérez",
+      "cantidadSolicitada": 20,
+      "estatus": "pendiente",
+      "fechaSolicitud": {
+        "_seconds": 1675296000,
+        "_nanoseconds": 0
+      }
+    }
+  ]
+}

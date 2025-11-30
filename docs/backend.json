@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "nombreCompleto": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "telefono": { "type": "string" },
+        "rol": { "type": "string", "enum": ["admin", "personal", "cliente"] },
+        "estatusCuenta": { "type": "string", "enum": ["pendiente", "activo", "correccion"] },
+        "observacionesRegistro": { "type": "string" },
+        "direccion": {
+          "type": "object",
+          "properties": {
+            "calle": { "type": "string" },
+            "cp": { "type": "string" },
+            "ciudad": { "type": "string" }
+          },
+          "required": ["calle", "cp", "ciudad"]
+        },
+        "fechaRegistro": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "nombreCompleto", "email", "rol", "estatusCuenta", "direccion", "fechaRegistro"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents a customer order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "idCliente": { "type": "string" },
+        "idPersonal": { "type": "string" },
+        "estatus": { "type": "string", "enum": ["pendiente", "en_proceso", "listo", "entregado"] },
+        "estatusPago": { "type": "string", "enum": ["pendiente", "pagado"] },
+        "montoTotal": { "type": "number" },
+        "fechaRecepcion": { "type": "string", "format": "date-time" },
+        "fechaEntregaEstimada": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "idCliente", "estatus", "estatusPago", "montoTotal", "fechaRecepcion", "fechaEntregaEstimada"]
+    },
+    "OrderItem": {
+      "title": "Order Item",
+      "description": "Represents an item within an order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "idServicio": { "type": "string" },
+        "nombreServicio": { "type": "string" },
+        "cantidad": { "type": "number" },
+        "precioUnitario": { "type": "number" },
+        "subtotal": { "type": "number" }
+      },
+      "required": ["id", "idServicio", "nombreServicio", "cantidad", "precioUnitario", "subtotal"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Represents a service available in the catalog.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string" },
+        "descripcion": { "type": "string" },
+        "precioActual": { "type": "number" },
+        "categoria": { "type": "string", "enum": ["Lavanderia", "Planchaduria"] },
+        "activo": { "type": "boolean" }
+      },
+      "required": ["id", "nombre", "descripcion", "precioActual", "categoria", "activo"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Represents an item in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombreInsumo": { "type": "string" },
+        "stockActual": { "type": "number" },
+        "stockCritico": { "type": "number" },
+        "unidad": { "type": "string" }
+      },
+      "required": ["id", "nombreInsumo", "stockActual", "stockCritico", "unidad"]
+    },
+    "PurchaseRequest": {
+      "title": "Purchase Request",
+      "description": "Represents a request to purchase supplies.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "idInsumo": { "type": "string" },
+        "idSolicitante": { "type": "string" },
+        "cantidadSolicitada": { "type": "number" },
+        "estatus": { "type": "string", "enum": ["pendiente", "aprobado", "rechazado"] },
+        "fechaSolicitud": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "idInsumo", "idSolicitante", "cantidadSolicitada", "estatus", "fechaSolicitud"]
+    }
+  },
+  "auth": {
+    "providers": ["email_password", "google.com"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profile information."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Stores customer orders."
+    },
+    "/orders/{orderId}/orderItems/{itemId}": {
+      "schema": { "$ref": "#/entities/OrderItem" },
+      "description": "Stores the items for a specific order."
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/Service" },
+      "description": "Stores the catalog of available services."
+    },
+    "/inventory/{itemId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Stores inventory stock information."
+    },
+    "/purchaseRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/PurchaseRequest" },
+      "description": "Stores purchase requests from staff."
+    }
+  }
+}
