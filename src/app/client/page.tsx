@@ -164,10 +164,14 @@ export default function ClientDashboard() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="relative flex h-[60vh] items-center justify-center bg-gradient-to-br from-cyan-200 to-blue-300 text-center overflow-hidden">
+        <section className="relative flex h-[50vh] items-center justify-center bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 text-center overflow-hidden rounded-b-[50px] shadow-lg">
           <AnimatedBubbles />
+          {/* Decoración similar a otras vistas */}
+          <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
+          <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
+          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="relative z-10 space-y-4 px-4">
-            <h1 className="font-headline text-4xl font-bold text-white md:text-6xl">
+            <h1 className="font-headline text-4xl font-bold text-white md:text-6xl drop-shadow">
               LAVANDERIA Y PLANCHADURIA ANGY
             </h1>
             <p className="text-lg text-white/90 md:text-xl">
@@ -175,7 +179,7 @@ export default function ClientDashboard() {
             </p>
             <Button
               size="lg"
-              className="mt-4 bg-gray-800 text-white hover:bg-gray-700"
+              className="mt-4 bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 rounded-xl"
             >
               Programar servicio
             </Button>

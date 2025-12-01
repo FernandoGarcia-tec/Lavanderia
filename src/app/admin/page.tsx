@@ -113,8 +113,35 @@ export default function AdminDashboard() {
   }, [firestore]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
+    // Contenedor unificado con fondo y encabezado, igual al estilo de /admin/users
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans p-4 md:p-8">
+      {/* Fondo superior */}
+      <div className="absolute top-0 left-0 w-full h-[40vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
+        <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
+        <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
+      </div>
+
+      {/* Contenido principal */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Encabezado */}
+        <div className="flex items-center gap-4 mb-8 text-white">
+          <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-2 ring-white/10">
+            {/* Icono simple mediante SVG para evitar dependencias adicionales */}
+            <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Panel de Administración</h1>
+            <p className="text-cyan-50 opacity-90">Resumen y métricas de la operación</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Informe Mensual de Servicios</CardTitle>
@@ -128,8 +155,8 @@ export default function AdminDashboard() {
                 <AreaChart data={monthlyData.length ? monthlyData : servicesChartData}>
                   <defs>
                     <linearGradient id="colorServices" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -179,13 +206,13 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-              <div className="flex items-center justify-between w-full">
-                <CardTitle className="font-headline">Alertas de Stock Crítico</CardTitle>
-                <div>
-                  <span className="text-sm text-muted-foreground mr-2">Alertas</span>
-                  <span><Badge variant="destructive">{alertCount}</Badge></span>
-                </div>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="font-headline">Alertas de Stock Crítico</CardTitle>
+              <div>
+                <span className="text-sm text-muted-foreground mr-2">Alertas</span>
+                <span><Badge variant="destructive">{alertCount}</Badge></span>
               </div>
+            </div>
             <CardDescription>
               Artículos que han caído por debajo del umbral de stock.
             </CardDescription>
@@ -196,13 +223,15 @@ export default function AdminDashboard() {
           <CardFooter>
              <Button variant="outline" className="w-full" asChild>
                 <Link href="/admin/inventory">
-                Gestionar Inventario <ArrowRight className="ml-2 h-4 w-4" />
+                  Gestionar Inventario <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
             </Button>
           </CardFooter>
         </Card>
       </div>
     </div>
+  </div>
+</div>
   );
 }
 

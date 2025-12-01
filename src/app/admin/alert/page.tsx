@@ -43,8 +43,33 @@ export default function AlertsPage() {
   }, [firestore]);
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans p-4 md:p-8">
+      {/* Fondo superior */}
+      <div className="absolute top-0 left-0 w-full h-[40vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
+        <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
+        <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
+      </div>
+
+      {/* Contenido principal */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Encabezado */}
+        <div className="flex items-center gap-4 mb-8 text-white">
+          <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-2 ring-white/10">
+            {/* Icono: campana */}
+            <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Alertas</h1>
+            <p className="text-cyan-50 opacity-90">Inventario, usuarios y eventos</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
         <CardHeader>
           <CardTitle>Alertas</CardTitle>
           <CardDescription>Gestiona alertas del sistema: inventario, usuarios y eventos importantes.</CardDescription>
@@ -140,6 +165,8 @@ export default function AlertsPage() {
           </div>
         </CardFooter>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

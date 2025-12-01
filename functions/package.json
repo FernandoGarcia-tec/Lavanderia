@@ -11,12 +11,20 @@
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
-    "firebase-admin": "^11.11.0",
-    "firebase-functions": "4.9.0"
+    "firebase-admin": "^11.11.1",
+    "firebase-functions": "^4.9.0"
   },
   "devDependencies": {
-    "typescript": "^5.1.6",
-    "@types/node": "^18.0.0",
-    "eslint": "^8.0.0"
-  }
+    "@types/node": "^18.19.130",
+    "eslint": "^8.0.0",
+    "typescript": "^5.9.3"
+  },
+  "description": "Esta función se ejecuta cuando se crea un usuario en Firebase Authentication y asegura que exista un documento en `users/{uid}` en Firestore. Si el documento ya existe se actualizan los campos relevantes; si no existe se crea con `status: 'pendiente'` y `role: null`. Además escribe un registro en `audit_logs`.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

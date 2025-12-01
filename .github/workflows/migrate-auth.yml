@@ -1,0 +1,40 @@
+name: Migrate Auth → Firestore
+
+on:
+  schedule:
+    # daily at 02:00 UTC (change as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Write service account key
+        env:
+          SA_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+        run: |
+          if [ -z "$SA_KEY" ]; then
+            echo "SERVICE_ACCOUNT_KEY secret is not set"; exit 1;
+          fi
+          # write exact JSON content to file
+          printf '%s' "$SA_KEY" > serviceAccountKey.json
+
+      - name: Install dependencies (functions)
+        working-directory: functions
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Run migration script
+        working-directory: functions
+        run: node scripts/migrate-auth-to-firestore.js
+
+      - name: Cleanup
+        run: rm -f serviceAccountKey.json || true

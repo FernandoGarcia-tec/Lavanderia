@@ -68,15 +68,20 @@ export async function POST(req: Request) {
     // set claim to force password change
     await auth.setCustomUserClaims(userRecord.uid, { mustChangePassword: true });
 
-    // create or update Firestore user doc
-    const userDocRef = await db.collection('users').where('email', '==', email).limit(1).get();
-    let docRef;
-    if (!userDocRef.empty) {
-      docRef = userDocRef.docs[0].ref;
-      await docRef.update({ authUid: userRecord.uid, authCreatedAt: admin.firestore.FieldValue.serverTimestamp(), role: role || 'client', status: 'aprobado' });
-    } else {
-      docRef = await db.collection('users').add({ name: name || '', email, role: role || 'client', status: 'aprobado', authUid: userRecord.uid, createdAt: admin.firestore.FieldValue.serverTimestamp(), authCreatedAt: admin.firestore.FieldValue.serverTimestamp() });
-    }
+    // Create or update Firestore user doc using the exact Auth UID as document ID
+    const userDocRef = db.collection('users').doc(userRecord.uid);
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    // Use set with merge to create or update the doc at users/{uid}
+    await userDocRef.set({
+      name: name || '',
+      email,
+      role: role || 'client',
+      status: 'aprobado',
+      authUid: userRecord.uid,
+      createdAt: now,
+      authCreatedAt: now,
+    }, { merge: true });
+    const docRef = userDocRef;
 
     // generate password reset link to send to user (recommended)
     let resetLink = null;

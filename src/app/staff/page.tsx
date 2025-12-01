@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { staffTasks } from "@/lib/placeholder-data";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, ListFilter } from "lucide-react";
+import { MoreHorizontal, ListFilter, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +94,30 @@ export default function StaffDashboard() {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans p-4 md:p-8">
+      {/* Fondo superior */}
+      <div className="absolute top-0 left-0 w-full h-[40vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
+        <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
+        <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
+      </div>
+
+      {/* Contenido principal */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Encabezado */}
+        <div className="flex items-center gap-4 mb-8 text-white">
+          <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-2 ring-white/10">
+            <Users className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Panel del Personal</h1>
+            <p className="text-cyan-50 opacity-90">Tareas y operaciones del día</p>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <>
       <Dialog open={showModal} onOpenChange={(open) => setShowModal(open)}>
         <DialogContent>
           <DialogHeader>
@@ -186,6 +209,8 @@ export default function StaffDashboard() {
           </Table>
         </CardContent>
       </Card>
-    </>
+        </>
+      </div>
+    </div>
   );
 }
