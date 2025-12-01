@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff } from 'lucide-react';
@@ -51,10 +51,42 @@ export default function LoginPage() {
         console.warn('Failed to read token claims', claimErr);
       }
 
-      const userDoc = await getDoc(doc(firestore, 'users', uid));
-      const data = userDoc.exists() ? userDoc.data() : null;
-      console.log('Login: fetched user doc for', uid, 'exists=', userDoc.exists(), 'data=', data);
-      
+      console.log('Login: auth uid=', uid, 'email=', cred.user.email, 'displayName=', cred.user.displayName);
+      const userPath = `users/${uid}`;
+      let userDoc;
+      try {
+        // Prefer server read to avoid local cache returning stale data
+        userDoc = await getDocFromServer(doc(firestore, 'users', uid));
+      } catch (serverErr) {
+        // Fallback to regular getDoc if server read fails (older SDKs or offline)
+        console.warn('getDocFromServer failed, falling back to getDoc', serverErr);
+        userDoc = await getDoc(doc(firestore, 'users', uid));
+      }
+      let data = userDoc.exists() ? userDoc.data() : null;
+      console.log('Login: fetched user doc path=', userPath, 'exists=', userDoc.exists());
+      console.log('Login: userDoc.data=', JSON.stringify(data));
+      console.log('Login: data.role=', data?.role, 'typeof role=', typeof data?.role);
+
+      // If the user doc does not exist, create a provisional document WITHOUT a role
+      // (status 'pendiente') so admins must approve. This prevents defaulting to 'client'.
+      if (!userDoc.exists()) {
+        const provisional = {
+          name: cred.user.displayName || cred.user.email || 'Sin nombre',
+          email: cred.user.email || '',
+          status: 'pendiente',
+          authUid: uid,
+          createdAt: serverTimestamp(),
+          authCreatedAt: serverTimestamp(),
+        };
+        try {
+          await setDoc(doc(firestore, 'users', uid), provisional, { merge: true });
+          console.log('Login: provisional users doc created for', uid);
+          data = provisional;
+        } catch (setErr) {
+          console.error('Login: failed to create provisional user doc', setErr);
+        }
+      }
+
       if (data && data.status === 'pendiente') {
         // Sign out and show message
         await signOut(auth);
@@ -63,18 +95,31 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on role (default to client)
-      const role = data?.role || 'client';
+      // Redirect based on role. If role is missing, sign out and keep user at login.
+      const role = data?.role;
       console.log('Login: resolved role=', role);
       const nombre = data?.name || (cred?.user?.displayName ?? 'sin-nombre');
       console.log(`Nombre del usuario: ${nombre}`);
-      
+
+      if (!role) {
+        await signOut(auth);
+        setError('Cuenta sin rol asignado. Contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'personal') {
         router.push('/staff');
-      } else {
+      } else if (role === 'client') {
         router.push('/client');
+      } else {
+        // Unknown role: block access
+        await signOut(auth);
+        setError('Rol desconocido. Contacta al administrador.');
+        setLoading(false);
+        return;
       }
     } catch (err: any) {
       console.error('Login error', err);
