@@ -22,9 +22,15 @@ let firestore: Firestore;
 function initializeFirebase() {
   if (getApps().length === 0) {
     firebaseApp = initializeApp(firebaseConfig);
-    auth = getAuth(firebaseApp);
-    firestore = getFirestore(firebaseApp);
+  } else {
+    // if an app already exists, reuse it
+    firebaseApp = getApps()[0] as FirebaseApp;
   }
+
+  // Ensure auth and firestore are always obtained from the app
+  auth = getAuth(firebaseApp);
+  firestore = getFirestore(firebaseApp);
+
   return { firebaseApp, auth, firestore };
 }
 

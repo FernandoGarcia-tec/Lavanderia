@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from 'react';
 import Link from "next/link";
 import { AppLogo } from "@/components/app-logo";
 import { Button } from "@/components/ui/button";
@@ -11,11 +14,78 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth, useFirestore } from '@/firebase/provider';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      
+      // check custom claims for mustChangePassword
+      try {
+        const idTokenResult = await cred.user.getIdTokenResult();
+        if (idTokenResult?.claims?.mustChangePassword) {
+          router.push('/change-password');
+          setLoading(false);
+          return;
+        }
+      } catch (claimErr) { // <--- AQUÍ FALTABA LA LLAVE DE CIERRE ANTERIOR
+        console.warn('Failed to read token claims', claimErr);
+      }
+
+      const userDoc = await getDoc(doc(firestore, 'users', uid));
+      const data = userDoc.exists() ? userDoc.data() : null;
+      console.log('Login: fetched user doc for', uid, 'exists=', userDoc.exists(), 'data=', data);
+      
+      if (data && data.status === 'pendiente') {
+        // Sign out and show message
+        await signOut(auth);
+        setError('La cuenta está pendiente. Espera a que el administrador la autorice.');
+        setLoading(false);
+        return;
+      }
+
+      // Redirect based on role (default to client)
+      const role = data?.role || 'client';
+      console.log('Login: resolved role=', role);
+      const nombre = data?.name || (cred?.user?.displayName ?? 'sin-nombre');
+      console.log(`Nombre del usuario: ${nombre}`);
+      
+      if (role === 'admin') {
+        router.push('/admin');
+      } else if (role === 'personal') {
+        router.push('/staff');
+      } else {
+        router.push('/client');
+      }
+    } catch (err: any) {
+      console.error('Login error', err);
+      setError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // CONTENEDOR PRINCIPAL CON EL FONDO Y ESTILOS
   return (
-    // CONTENEDOR PRINCIPAL CON EL FONDO Y ESTILOS
     <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex items-center justify-center p-4">
       
       {/* --- FONDO SUPERIOR (MITAD PANTALLA) --- */}
@@ -47,12 +117,14 @@ export default function LoginPage() {
           </CardHeader>
           
           <CardContent className="pt-6">
-            <form className="space-y-5">
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-slate-600">Correo Electrónico</Label>
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
                   placeholder="nombre@ejemplo.com"
                   required
                   className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
@@ -68,19 +140,35 @@ export default function LoginPage() {
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  required 
-                  className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
+                    required
+                    className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl pr-10"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-md shadow-cyan-200 transition-all hover:scale-[1.02]"
+                disabled={loading}
               >
-                Iniciar Sesión
+                {loading ? 'Iniciando...' : 'Iniciar Sesión'}
               </Button>
+              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
             </form>
             
             <div className="mt-6 text-center text-sm text-muted-foreground">

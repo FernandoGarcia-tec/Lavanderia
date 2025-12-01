@@ -3,7 +3,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AreaChart, Bell, Building, Users, Wrench } from "lucide-react";
+import { AreaChart, BarChart, Bell, Building, Users, Wrench, Box } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useFirestore } from '@/firebase/provider';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -25,8 +29,10 @@ const navItems = [
   { href: "/admin", icon: <AreaChart />, label: "Panel de control" },
   { href: "/admin/users", icon: <Users />, label: "Gestión de usuarios" },
   { href: "/admin/services", icon: <Wrench />, label: "Gestionar Servicios" },
-  { href: "#", icon: <Building />, label: "Corporativo" },
-  { href: "#", icon: <Bell />, label: "Alertas" },
+  { href: "/admin/inventory", icon: <Box />, label: "Gestionar Inventario" },
+  { href: "/admin/report", icon: <BarChart />, label: "Reportes" },
+  //{ href: "#", icon: <Building />, label: "Corporativo" },
+  { href: "/admin/alert", icon: <Bell />, label: "Alertas" },
 ];
 
 export default function AdminLayout({
@@ -35,6 +41,24 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const firestore = useFirestore();
+  const [lowCount, setLowCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!firestore) return;
+    const q = collection(firestore, 'inventory');
+    const unsub = onSnapshot(q, (snap: any) => {
+      const items: any[] = [];
+      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
+      const low = items.filter(it => {
+        const qty = Number(it.quantity ?? it.stockActual ?? it.cantidad ?? it.stock ?? 0);
+        const min = Number(it.minThreshold ?? it.stockCritico ?? it.stockMin ?? 0);
+        return qty < min;
+      });
+      setLowCount(low.length);
+    });
+    return () => unsub();
+  }, [firestore]);
 
   return (
     <SidebarProvider>
@@ -53,7 +77,7 @@ export default function AdminLayout({
                 >
                   <Link href={item.href}>
                     {item.icon}
-                    <span>{item.label}</span>
+                    <span className="flex items-center gap-2">{item.label}{item.label === 'Alertas' ? <Badge variant="destructive">{lowCount}</Badge> : null}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

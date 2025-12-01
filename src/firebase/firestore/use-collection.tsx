@@ -23,6 +23,11 @@ export function useCollection<T>(path: string, options?: UseCollectionOptions) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!firestore) {
+      setLoading(false);
+      setError(new Error('Firestore no inicializado'));
+      return;
+    }
     const collectionRef = collection(firestore, path);
     let q: Query<DocumentData> = collectionRef;
 

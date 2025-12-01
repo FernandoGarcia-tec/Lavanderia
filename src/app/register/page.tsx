@@ -1,6 +1,13 @@
+"use client";
+
+import { useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import logo from "./logo.png";
+import { useAuth, useFirestore } from '@/firebase/provider';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { AppLogo } from "@/components/app-logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +20,43 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { Eye, EyeOff } from 'lucide-react';
+
 export default function RegisterPage() {
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+  const [showPassword, setShowPassword] = useState(false);
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      // Create user document in Firestore
+      await setDoc(doc(firestore, 'users', uid), {
+        name,
+        email,
+        role: 'client',
+        status: 'pendiente',
+        createdAt: serverTimestamp(),
+      });
+      // Redirect to login or dashboard
+      router.push('/');
+    } catch (err: any) {
+      console.error('Registration error', err);
+      setError(err.message || 'Error al registrar');
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     // CONTENEDOR PRINCIPAL
     <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex items-center justify-center p-4">
@@ -60,11 +103,13 @@ import logo from "./logo.png";
           </CardHeader>
 
           <CardContent className="pt-6">
-            <form className="space-y-5">
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-slate-600">Nombre Completo</Label>
                 <Input 
                   id="name" 
+                  value={name}
+                  onChange={(e) => setName((e.target as HTMLInputElement).value)}
                   placeholder="John Doe" 
                   required 
                   className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
@@ -76,6 +121,8 @@ import logo from "./logo.png";
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
                   placeholder="nombre@ejemplo.com"
                   required
                   className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
@@ -87,6 +134,8 @@ import logo from "./logo.png";
                 <Input 
                   id="password" 
                   type="password" 
+                  value={password}
+                  onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
                   required 
                   className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
                 />
@@ -95,9 +144,11 @@ import logo from "./logo.png";
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-md shadow-cyan-200 transition-all hover:scale-[1.02] mt-2"
+                disabled={loading}
               >
-                Registrarse
+                {loading ? 'Creando cuenta...' : 'Registrarse'}
               </Button>
+              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">

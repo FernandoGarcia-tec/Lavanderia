@@ -14,6 +14,11 @@ export function useDoc<T>(path: string) {
       setLoading(false);
       return;
     }
+    if (!firestore) {
+      setLoading(false);
+      setError(new Error('Firestore no inicializado'));
+      return;
+    }
     const docRef = doc(firestore, path);
 
     const unsubscribe = onSnapshot(

@@ -8,11 +8,16 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     function getRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol;
+      if (request.auth == null) {
+        return null;
+      }
+      // safely read the caller's user document
+      let u = get(/databases/$(database)/documents/users/ + request.auth.uid);
+      return u.exists() && u.data.role != null ? u.data.role : null;
     }
 
     function isAdmin() {
@@ -26,7 +31,8 @@ service cloud.firestore {
     // USERS: Clientes pueden leer/escribir su propio doc. Admin tiene acceso total.
     match /users/{userId} {
       allow read, update: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow create: if isSignedIn(); // Allow user creation upon signup
+      // Allow creation only for the authenticated user creating their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
       allow delete: if isAdmin();
     }
 
@@ -40,35 +46,49 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       // ORDER ITEMS (Subcollection)
-      match /orderItems/{itemId} {
-        allow read: if isSignedIn() && (
-          get(/databases/$(database)/documents/orders/$(orderId)).data.idCliente == request.auth.uid || isStaff() || isAdmin()
-        );
-        // Items are part of the order, managed via order updates, not directly.
-        allow create, update, delete: if false;
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+
+          // Helper functions
+          function isSignedIn() {
+            return request.auth != null;
+          }
+
+          function isOwner(userId) {
+            return request.auth != null && request.auth.uid == userId;
+          }
+
+          function getRole() {
+            if (request.auth == null) {
+              return null;
+            }
+            let u = get(/databases/$(database)/documents/users/ + request.auth.uid);
+            return u.exists() && u.data.role != null ? u.data.role : null;
+          }
+
+          function isAdmin() {
+            return getRole() == 'admin';
+          }
+
+          // Users: each authenticated user can create their own profile and read/update it
+          match /users/{userId} {
+            // Allow creation only for the authenticated user creating their own document
+            allow create: if request.auth != null && request.auth.uid == userId;
+            // Read/update allowed for the owner or admins
+            allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+            allow delete: if isAdmin();
+          }
+
+          // Public read-only services catalog
+          match /services/{serviceId} {
+            allow read: if true;
+            allow write: if isAdmin();
+          }
+
+          // Deny everything else by default
+          match /{document=**} {
+            allow read, write: if false;
+          }
+        }
       }
-    }
-
-    // SERVICES (Catálogo)
-    match /services/{serviceId} {
-        // Everyone can read the service catalog
-        allow read: if true;
-        // Only admins can create, update, or delete services
-        allow write: if isAdmin();
-    }
-
-    // INVENTORY: Solo lectura para Personal. Escritura solo Admin.
-    match /inventory/{itemId} {
-      allow read: if isStaff() || isAdmin();
-      allow write: if isAdmin();
-    }
-
-    // PURCHASE REQUESTS: Personal puede crear. Solo Admin puede actualizar 'estatus'.
-    match /purchaseRequests/{requestId} {
-      allow read: if isStaff() || isAdmin();
-      allow create: if isStaff();
-      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estatus']);
-      allow delete: if isAdmin();
-    }
-  }
-}
