@@ -106,8 +106,10 @@ export default function ReportsPage() {
   function parseOrderDate(order: any) {
     if (!order) return null;
     if (order.fechaRecepcion && typeof order.fechaRecepcion.toDate === 'function') return order.fechaRecepcion.toDate();
+    if (order.receivedAt && typeof order.receivedAt.toDate === 'function') return order.receivedAt.toDate();
     if (order.createdAt && typeof order.createdAt.toDate === 'function') return order.createdAt.toDate();
     if (order.fechaRecepcion instanceof Date) return order.fechaRecepcion;
+    if (order.receivedAt instanceof Date) return order.receivedAt;
     if (order.createdAt instanceof Date) return order.createdAt;
     return null;
   }
@@ -301,11 +303,17 @@ export default function ReportsPage() {
       id: o.id || '',
       cliente: o.idCliente || o.clientId || '',
       fecha: parseOrderDate(o) ? format(parseOrderDate(o) as Date, 'yyyy-MM-dd HH:mm') : '',
-      estatus: o.estatus || '',
+      estatus: o.estatus || o.status || '',
       montoTotal: typeof o.montoTotal === 'number' ? o.montoTotal : (Array.isArray(o.items) ? o.items.reduce((a: number, it: any) => a + (Number(it.subtotal) || 0), 0) : 0),
+      atendio: o.staffName || o.attendedBy || o.atendidoPor || '',
+      atendioUid: o.staffUid || '',
+      entrego: o.deliveredBy || '',
+      entregoUid: o.deliveredByUid || '',
+      entregadoEn: o.deliveredAt && typeof o.deliveredAt.toDate === 'function' ? format(o.deliveredAt.toDate(), 'yyyy-MM-dd HH:mm') : '',
+      metodoPago: o.paymentMethod || '',
       items: JSON.stringify(o.items || []),
     }));
-    const csv = toCSV(rows, ['id','cliente','fecha','estatus','montoTotal','items']);
+    const csv = toCSV(rows, ['id','cliente','fecha','estatus','montoTotal','metodoPago','atendio','atendioUid','entrego','entregoUid','entregadoEn','items']);
     downloadCSV(`ordenes_${startDate}_a_${endDate}.csv`, csv);
   }
 

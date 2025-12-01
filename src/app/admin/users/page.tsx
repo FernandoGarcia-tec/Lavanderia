@@ -130,13 +130,13 @@ export default function UsersPage() {
     }
   }
 
-  async function createUserDirect(data: { name: string; email: string; role: string }, password?: string) {
+  async function createUserDirect(data: { name: string; email: string; role: string; phone?: string }, password?: string) {
     try {
       // Call server-side endpoint to create Auth user and Firestore doc
       const res = await fetch('/api/create-auth-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: data.name, email: data.email, role: data.role, defaultPassword: password || defaultPass }),
+        body: JSON.stringify({ name: data.name, email: data.email, role: data.role, phone: data.phone, defaultPassword: password || defaultPass }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Error creating auth user');
@@ -237,12 +237,13 @@ export default function UsersPage() {
                     const fd = new FormData(e.currentTarget as HTMLFormElement);
                     const name = String(fd.get('name') || '').trim();
                     const email = String(fd.get('email') || '').trim();
+                    const phone = String(fd.get('phone') || '').trim();
                     const role = roleValue || 'client';
                     if (!name || !email) {
                       toast({ title: 'Faltan datos', description: 'Nombre y correo son requeridos.' });
                       return;
                     }
-                    createUserDirect({ name, email, role });
+                    createUserDirect({ name, email, role, phone });
                   }}
                   className="space-y-4 py-2"
                 >
@@ -254,6 +255,10 @@ export default function UsersPage() {
                     <div className="space-y-1">
                       <Label htmlFor="email" className="text-slate-600">Correo Electrónico</Label>
                       <Input id="email" name="email" type="email" className="rounded-xl border-slate-200" placeholder="correo@ejemplo.com" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="phone" className="text-slate-600">Teléfono (opcional)</Label>
+                      <Input id="phone" name="phone" className="rounded-xl border-slate-200" placeholder="55 0000 0000" />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="defaultPass" className="text-slate-600">Contraseña Temporal</Label>

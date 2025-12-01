@@ -86,3 +86,13 @@
     /* Puedes ajustar los valores para más aleatoriedad */
   }
 }
+
+/* Ocultar el badge flotante de Next.js Dev Tools en desarrollo */
+[data-next-badge],
+button[data-nextjs-dev-tools-button],
+[data-nextjs-dev-overlay],
+/* Next.js loading mark */
+[data-next-mark],
+svg[data-next-mark-loading] {
+  display: none !important;
+}

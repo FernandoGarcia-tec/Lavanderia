@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ export default function AlertsPage() {
 
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [inventoryNotifications, setInventoryNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     if (!firestore) return;
@@ -36,9 +37,24 @@ export default function AlertsPage() {
       setPendingUsers(items);
     });
 
+    // Real-time inventory notifications (alerts collection)
+    const alertsCol = collection(firestore, 'alerts');
+    const unsubAlerts = onSnapshot(alertsCol, (snap: any) => {
+      const items: any[] = [];
+      snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
+      // sort newest first if timestamp available
+      items.sort((a,b) => {
+        const ta = a.createdAt?.seconds || 0;
+        const tb = b.createdAt?.seconds || 0;
+        return tb - ta;
+      });
+      setInventoryNotifications(items.filter(n => n.type === 'inventory'));
+    });
+
     return () => {
       unsubInv();
       unsubUsers();
+      unsubAlerts();
     };
   }, [firestore]);
 
@@ -155,6 +171,30 @@ export default function AlertsPage() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">Puedes ver registros de auditoría y otros eventos en el <Link href="/admin/report" className="underline">informe</Link>.</p>
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">Notificaciones Recientes de Inventario</h3>
+              <Badge variant="outline">{inventoryNotifications.length}</Badge>
+            </div>
+            {inventoryNotifications.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sin notificaciones todavía.</p>
+            ) : (
+              <div className="space-y-2">
+                {inventoryNotifications.slice(0, 15).map(n => (
+                  <div key={n.id} className="flex items-start justify-between rounded border p-3 bg-white">
+                    <div>
+                      <div className="font-medium">{n.name}</div>
+                      <div className="text-xs text-muted-foreground">Estado: {n.status} · Stock: {n.stock} · Mínimo: {n.minThreshold}</div>
+                    </div>
+                    <Button size="sm" variant="ghost" asChild>
+                      <Link href={`/admin/inventory?highlight=${n.itemId}`}>Ver</Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </CardContent>
         <CardFooter>
