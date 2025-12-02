@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ export default function AlertsPage() {
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [inventoryNotifications, setInventoryNotifications] = useState<any[]>([]);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!firestore) return;
@@ -57,6 +58,26 @@ export default function AlertsPage() {
       unsubAlerts();
     };
   }, [firestore]);
+
+  async function dismissNotification(id: string) {
+    if (!firestore || !id) return;
+    try {
+      setProcessingId(id);
+      await updateDoc(doc(firestore, 'alerts', id), { status: 'dismissed', dismissedAt: serverTimestamp() });
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function deleteNotification(id: string) {
+    if (!firestore || !id) return;
+    try {
+      setProcessingId(id);
+      await deleteDoc(doc(firestore, 'alerts', id));
+    } finally {
+      setProcessingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans p-4 md:p-8">
@@ -188,9 +209,17 @@ export default function AlertsPage() {
                       <div className="font-medium">{n.name}</div>
                       <div className="text-xs text-muted-foreground">Estado: {n.status} · Stock: {n.stock} · Mínimo: {n.minThreshold}</div>
                     </div>
-                    <Button size="sm" variant="ghost" asChild>
-                      <Link href={`/admin/inventory?highlight=${n.itemId}`}>Ver</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="ghost" asChild>
+                        <Link href={`/admin/inventory?highlight=${n.itemId}`}>Ver</Link>
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={processingId===n.id} onClick={() => dismissNotification(n.id)}>
+                        {processingId===n.id ? '...' : 'Marcar atendida'}
+                      </Button>
+                      <Button size="sm" variant="destructive" disabled={processingId===n.id} onClick={() => deleteNotification(n.id)}>
+                        {processingId===n.id ? '...' : 'Eliminar'}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

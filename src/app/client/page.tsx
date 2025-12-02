@@ -137,7 +137,7 @@ export default function ClientDashboard() {
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
             <Link
-              href="#"
+              href="/client/schedule"
               className="text-sm font-medium text-gray-600 transition-colors hover:text-primary"
             >
               Programar servicio
@@ -178,10 +178,11 @@ export default function ClientDashboard() {
               Honradez y Eficacia
             </p>
             <Button
+              asChild
               size="lg"
               className="mt-4 bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 rounded-xl"
             >
-              Programar servicio
+              <Link href="/client/schedule">Programar servicio</Link>
             </Button>
           </div>
         </section>
@@ -191,7 +192,7 @@ export default function ClientDashboard() {
             Mis funciones
           </h2>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <Link href="#">
+            <Link href="/client/schedule">
               <div className="group flex items-center justify-between rounded-lg bg-cyan-50/50 p-8 transition-shadow hover:shadow-lg">
                 <div>
                   <h3 className="font-headline text-2xl font-semibold text-gray-700">

@@ -55,23 +55,41 @@ export default function StaffDashboard() {
   const [staffName, setStaffName] = useState<string>('');
 
   useEffect(() => {
-    // Mostrar siempre el modal de apertura al iniciar sesión (una vez por sesión)
-    try {
-      if (!firestore || !auth?.currentUser?.uid) {
-        setChecking(false);
-        return;
-      }
-      const uid = auth.currentUser.uid;
-      const todayKey = new Date().toISOString().slice(0,10);
-      const lsKey = `openingRecorded_${todayKey}_${uid}`;
-      if (!localStorage.getItem(lsKey)) {
+    async function checkOpeningStrict() {
+      try {
+        if (!firestore || !auth?.currentUser?.uid) {
+          setChecking(false);
+          return;
+        }
+        const uid = auth.currentUser.uid;
+        const snap = await getDocs(collection(firestore, 'cash_registers'));
+        const start = new Date();
+        start.setHours(0,0,0,0);
+        const end = new Date();
+        end.setHours(23,59,59,999);
+        let hasToday = false;
+        snap.forEach((docu) => {
+          const d = docu.data() as any;
+          if (d?.type !== 'opening') return;
+          if (String(d?.userId || '') !== uid) return;
+          const ts = d?.createdAt;
+          let dt: Date | null = null;
+          if (ts?.toDate) dt = ts.toDate();
+          else if (typeof ts === 'string') dt = new Date(ts);
+          if (dt && dt >= start && dt <= end) {
+            hasToday = true;
+          }
+        });
+        if (!hasToday) setShowModal(true);
+      } catch (e) {
+        console.warn('opening strict check error', e);
+        // En caso de error, mostrar modal para no bloquear operación
         setShowModal(true);
+      } finally {
+        setChecking(false);
       }
-    } catch (e) {
-      console.warn('opening modal init error', e);
-    } finally {
-      setChecking(false);
     }
+    checkOpeningStrict();
   }, [firestore, auth]);
 
   useEffect(() => {
@@ -112,27 +130,21 @@ export default function StaffDashboard() {
     })();
   }, [auth, firestore]);
 
-  async function saveOpening(skip = false) {
+  async function saveOpening() {
     try {
       if (!firestore) return;
-      if (!skip) {
-        const amount = parseFloat(openingAmount) || 0;
-        await addDoc(collection(firestore, 'cash_registers'), {
-          type: 'opening',
-          amount,
-          userId: auth?.currentUser?.uid || null,
-          createdAt: serverTimestamp(),
-        });
-        toast({ title: 'Registrado', description: `Monto inicial guardado: ${amount}` });
-      } else {
-        toast({ title: 'Omitido', description: 'Se omitió el registro de apertura.' });
+      const amount = parseFloat(openingAmount);
+      if (isNaN(amount) || amount < 0) {
+        toast({ title: 'Monto inválido', description: 'Ingresa un monto válido mayor o igual a 0.', variant: 'destructive' });
+        return;
       }
-      // Marcar en localStorage para no volver a mostrar durante esta sesión
-      const uid = auth?.currentUser?.uid;
-      if (uid) {
-        const todayKey = new Date().toISOString().slice(0,10);
-        localStorage.setItem(`openingRecorded_${todayKey}_${uid}`, '1');
-      }
+      await addDoc(collection(firestore, 'cash_registers'), {
+        type: 'opening',
+        amount,
+        userId: auth?.currentUser?.uid || null,
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: 'Registrado', description: `Monto inicial guardado: ${amount.toFixed(2)}` });
       setShowModal(false);
     } catch (err: any) {
       console.error('saveOpening error', err);
@@ -198,8 +210,7 @@ export default function StaffDashboard() {
             </div>
             <DialogFooter className="mt-4">
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => saveOpening(true)}>Omitir</Button>
-                <Button onClick={() => saveOpening(false)}>Guardar monto</Button>
+                <Button onClick={() => saveOpening()}>Guardar monto</Button>
               </div>
             </DialogFooter>
           </DialogContent>
