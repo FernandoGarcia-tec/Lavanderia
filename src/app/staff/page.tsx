@@ -55,29 +55,24 @@ export default function StaffDashboard() {
   const [staffName, setStaffName] = useState<string>('');
 
   useEffect(() => {
-    async function checkOpening() {
-      try {
-        if (!firestore) {
-          setChecking(false);
-          return;
-        }
-        const start = new Date();
-        start.setHours(0,0,0,0);
-        const end = new Date();
-        end.setHours(23,59,59,999);
-        const q = query(collection(firestore, 'cash_registers'), where('type', '==', 'opening'), where('createdAt', '>=', Timestamp.fromDate(start)), where('createdAt', '<=', Timestamp.fromDate(end)));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          setShowModal(true);
-        }
-      } catch (err) {
-        console.error('checkOpening error', err);
-      } finally {
+    // Mostrar siempre el modal de apertura al iniciar sesión (una vez por sesión)
+    try {
+      if (!firestore || !auth?.currentUser?.uid) {
         setChecking(false);
+        return;
       }
+      const uid = auth.currentUser.uid;
+      const todayKey = new Date().toISOString().slice(0,10);
+      const lsKey = `openingRecorded_${todayKey}_${uid}`;
+      if (!localStorage.getItem(lsKey)) {
+        setShowModal(true);
+      }
+    } catch (e) {
+      console.warn('opening modal init error', e);
+    } finally {
+      setChecking(false);
     }
-    checkOpening();
-  }, [firestore]);
+  }, [firestore, auth]);
 
   useEffect(() => {
     if (!firestore) return;
@@ -131,6 +126,12 @@ export default function StaffDashboard() {
         toast({ title: 'Registrado', description: `Monto inicial guardado: ${amount}` });
       } else {
         toast({ title: 'Omitido', description: 'Se omitió el registro de apertura.' });
+      }
+      // Marcar en localStorage para no volver a mostrar durante esta sesión
+      const uid = auth?.currentUser?.uid;
+      if (uid) {
+        const todayKey = new Date().toISOString().slice(0,10);
+        localStorage.setItem(`openingRecorded_${todayKey}_${uid}`, '1');
       }
       setShowModal(false);
     } catch (err: any) {

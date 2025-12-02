@@ -96,3 +96,25 @@ button[data-nextjs-dev-tools-button],
 svg[data-next-mark-loading] {
   display: none !important;
 }
+
+/* Issues badge container */
+[data-issues],
+[data-issues-open],
+[data-issues-collapse] {
+  display: none !important;
+}
+
+/* Try to hide wrapper that contains the devtools button and issues */
+div:has(> button[data-nextjs-dev-tools-button]) {
+  display: none !important;
+}
+
+/* Additional tags/ids used by newer Next versions */
+nextjs-portal,
+nextjs-overlay,
+nextjs-devtools,
+#nextjs-devtools,
+[id^="nextjs-"],
+[class*="nextjs-devtools"] {
+  display: none !important;
+}

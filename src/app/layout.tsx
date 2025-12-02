@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
+import { HideNextDevTools } from '@/components/hide-next-devtools';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function RootLayout({
           {children}
         </FirebaseClientProvider>
         <Toaster />
+        <HideNextDevTools />
       </body>
     </html>
   );
