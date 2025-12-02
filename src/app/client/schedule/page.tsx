@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, useFirestore } from '@/firebase/provider';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, User } from "lucide-react";
 
@@ -79,13 +79,13 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-// Tipos de servicio con iconos
-const SERVICE_TYPES = [
-  { id: 'lavanderia', label: 'Lavandería', icon: <Shirt className="w-8 h-8" />, desc: 'Lavado y secado por encargo (por Kilo)', color: 'bg-blue-100 text-blue-600' },
-  { id: 'planchaduria', label: 'Planchaduría', icon: <Wind className="w-8 h-8" />, desc: 'Planchado profesional (por Docena/Pieza)', color: 'bg-orange-100 text-orange-600' },
-  { id: 'tintoreria', label: 'Tintorería', icon: <Sparkles className="w-8 h-8" />, desc: 'Limpieza en seco para prendas delicadas', color: 'bg-purple-100 text-purple-600' },
-  { id: 'edredones', label: 'Edredones', icon: <Package2 className="w-8 h-8" />, desc: 'Limpieza especial para ropa de cama', color: 'bg-teal-100 text-teal-600' },
-];
+// Icon mapping by service name
+const serviceIconByName: Record<string, JSX.Element> = {
+    'Lavandería': <Shirt className="w-8 h-8" />,
+    'Planchaduría': <Wind className="w-8 h-8" />,
+    'Tintorería': <Sparkles className="w-8 h-8" />,
+    'Edredones': <Package2 className="w-8 h-8" />,
+};
 
 export default function SchedulePage() {
   const [step, setStep] = useState(1);
@@ -94,6 +94,7 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+    const [services, setServices] = useState<Array<{ id: string; name: string; desc?: string }>>([]);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -108,6 +109,21 @@ export default function SchedulePage() {
     setFormData({ ...formData, serviceType: id });
     setStep(2); // Avanzar automáticamente al seleccionar
   };
+
+    // Load services from Firestore collection 'servicies'
+    // Expects documents with at least { name, description }
+    // Uses getDocs for a simple one-time fetch
+    useState(() => {
+        (async () => {
+            try {
+                const snap = await getDocs(collection(firestore, 'servicies'));
+                const list = snap.docs.map(d => ({ id: d.id, name: (d.data() as any).name || 'Servicio', desc: (d.data() as any).description || '' }));
+                setServices(list);
+            } catch (e) {
+                console.error('Error loading services:', e);
+            }
+        })();
+    });
 
   const handleSubmit = async () => {
     if (!auth?.currentUser) {
@@ -198,23 +214,23 @@ export default function SchedulePage() {
 
             {/* CONTENIDO PRINCIPAL */}
             <div className="max-w-3xl mx-auto">
-                {step === 1 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-bottom-8 duration-500">
-                        {SERVICE_TYPES.map((service) => (
-                            <button
-                                key={service.id}
-                                onClick={() => handleServiceSelect(service.id)}
-                                className="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all text-left border border-transparent hover:border-cyan-200 group"
-                            >
-                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${service.color} group-hover:bg-cyan-600 group-hover:text-white transition-colors`}>
-                                    {service.icon}
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 group-hover:text-cyan-700">{service.label}</h3>
-                                <p className="text-slate-500 mt-2 text-sm">{service.desc}</p>
-                            </button>
-                        ))}
-                    </div>
-                )}
+                                {step === 1 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-bottom-8 duration-500">
+                                        {services.map((service) => (
+                                            <button
+                                                key={service.id}
+                                                onClick={() => handleServiceSelect(service.id)}
+                                                className="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all text-left border border-transparent hover:border-cyan-200 group"
+                                            >
+                                                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-cyan-100 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors">
+                                                    {serviceIconByName[service.name] ?? <Package2 className="w-8 h-8" />}
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-800 group-hover:text-cyan-700">{service.name}</h3>
+                                                <p className="text-slate-500 mt-2 text-sm">{service.desc}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
 
                 {step === 2 && (
                     <Card className="rounded-3xl shadow-2xl animate-in slide-in-from-right-8 duration-500">
@@ -296,7 +312,7 @@ export default function SchedulePage() {
                             </div>
                             <h2 className="text-3xl font-bold text-slate-800 mb-2">¡Pedido Recibido!</h2>
                             <p className="text-slate-500 max-w-md mx-auto mb-8">
-                                Hemos registrado tu solicitud de <strong>{SERVICE_TYPES.find(s => s.id === formData.serviceType)?.label}</strong>. 
+                                Hemos registrado tu solicitud de <strong>{services.find(s => s.id === formData.serviceType)?.name}</strong>. 
                                 Un repartidor pasará el <strong>{formData.date}</strong> a las <strong>{formData.time}</strong>.
                             </p>
                             <div className="flex gap-4">

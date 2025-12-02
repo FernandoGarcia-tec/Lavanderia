@@ -230,7 +230,7 @@ export default function ClientDashboard() {
       <footer className="bg-gray-100 py-6">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <p className="text-sm text-gray-500">
-            © 2025 José Fernando Garcia Quintero
+            © 2025 Desarrollado por José Fernando Garcia Quintero
           </p>
           <div className="flex items-center gap-6">
              <div className="flex gap-4">
