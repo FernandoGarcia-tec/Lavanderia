@@ -21,19 +21,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RegisterPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-  const [showPassword, setShowPassword] = useState(false);
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -47,6 +49,10 @@ export default function RegisterPage() {
         role: 'client',
         status: 'pendiente',
         createdAt: serverTimestamp(),
+      });
+      toast({
+        title: 'Cuenta creada',
+        description: 'Tu cuenta fue registrada. Espera aprobación o inicia sesión.',
       });
       // Redirect to login or dashboard
       router.push('/');
@@ -131,14 +137,26 @@ import logo from "./logo.png";
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-slate-600">Contraseña</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
-                  required 
-                  className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'} 
+                    value={password}
+                    onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
+                    required 
+                    className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl pr-10"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
 
               <Button 

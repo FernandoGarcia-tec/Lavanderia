@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, ClipboardList, HandCoins, LogOut, User } from "lucide-react";
+import { Archive, ClipboardList, HandCoins, LogOut, Banknote } from "lucide-react"; // Agregué Banknote
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -19,8 +19,10 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/firebase/provider";
+import { Input } from "@/components/ui/input"; // Importado
+import { Label } from "@/components/ui/label"; // Importado
+import { useAuth, useFirestore } from "@/firebase/provider"; // useFirestore agregado
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"; // Firestore imports
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signOut } from "firebase/auth";
 import { 
@@ -38,7 +40,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/staff", icon: <ClipboardList />, label: "Panel de Tareas" },
   { href: "/staff/inventory", icon: <Archive />, label: "Inventario" },
-  { href: "/staff/services", icon: <HandCoins />, label: "Registrar Pedido" },
+  { href: "/staff/services", icon: <HandCoins />, label: "Registrar Cliente" },
 ];
 
 export default function StaffLayout({
@@ -48,9 +50,45 @@ export default function StaffLayout({
 }) {
   const pathname = usePathname();
   const auth = useAuth();
+  const firestore = useFirestore(); // Instancia de Firestore
   const userLabel = auth?.currentUser?.displayName || auth?.currentUser?.email || "Usuario";
   const userInitial = (userLabel || "U").charAt(0).toUpperCase();
+  
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [closingAmount, setClosingAmount] = useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Función para manejar el cierre de caja y sesión
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      // 1. Guardar el registro de cierre de caja si se ingresó un monto
+      if (closingAmount && !isNaN(parseFloat(closingAmount))) {
+        await addDoc(collection(firestore, 'cash_registers'), {
+          type: 'closing', // Tipo cierre
+          amount: parseFloat(closingAmount),
+          userId: auth?.currentUser?.uid || null,
+          userEmail: auth?.currentUser?.email || null,
+          userName: auth?.currentUser?.displayName || 'Personal',
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      // 2. Cerrar sesión
+      if (auth) await signOut(auth);
+      
+      // 3. Redirigir (Forzar recarga para limpiar estados)
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error al cerrar turno:", error);
+      // En caso de error, intentar cerrar sesión de todos modos
+      if (auth) await signOut(auth);
+      window.location.href = "/";
+    } finally {
+      setIsSigningOut(false);
+      setConfirmOpen(false);
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -72,7 +110,7 @@ export default function StaffLayout({
                     isActive={isActive}
                     tooltip={item.label}
                     className={`
-                      transition-all duration-200 rounded-xl px-4 py-3 h-auto
+                      transition-all duration-200 rounded-xl px-4 py-3 h-auto mb-1
                       ${isActive 
                         ? 'bg-cyan-50 text-cyan-700 shadow-sm border border-cyan-100 font-medium' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -93,7 +131,7 @@ export default function StaffLayout({
         </SidebarContent>
 
         <SidebarFooter className="p-3 bg-slate-50/50 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl bg-white border border-slate-100 shadow-sm group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl bg-white border border-slate-100 shadow-sm group-data-[collapsible=icon]:justify-center transition-all">
             <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
               <AvatarImage src={auth?.currentUser?.photoURL || undefined} alt={userLabel} />
               <AvatarFallback className="bg-cyan-100 text-cyan-700 font-bold">{userInitial}</AvatarFallback>
@@ -109,35 +147,57 @@ export default function StaffLayout({
               <Button 
                 variant="outline" 
                 className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 rounded-xl group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+                onClick={() => {
+                    setClosingAmount(""); // Limpiar input al abrir
+                    setConfirmOpen(true);
+                }}
               >
                 <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Cerrar Sesión</span>
+                <span className="group-data-[collapsible=icon]:hidden">Cerrar Turno</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-2xl sm:max-w-md">
               <DialogHeader>
-                <div className="mx-auto bg-red-100 p-3 rounded-full w-fit mb-2">
-                    <LogOut className="h-6 w-6 text-red-600" />
+                <div className="mx-auto bg-slate-100 p-3 rounded-full w-fit mb-2">
+                    <Banknote className="h-6 w-6 text-slate-600" />
                 </div>
-                <DialogTitle className="text-center text-xl text-slate-900">Confirmar salida</DialogTitle>
+                <DialogTitle className="text-center text-xl text-slate-900">Cierre de Caja y Salida</DialogTitle>
                 <DialogDescription className="text-center text-slate-500">
-                  ¿Estás seguro de que deseas cerrar sesión y salir del portal del personal?
+                  Ingresa el monto final en efectivo antes de cerrar tu sesión.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter className="sm:justify-center gap-2 mt-4">
-                <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="rounded-xl px-6">Cancelar</Button>
+              
+              <div className="py-4 px-2">
+                <Label htmlFor="closing-amount" className="text-slate-600 mb-2 block">Monto en Caja (Efectivo)</Label>
+                <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
+                    <Input 
+                        id="closing-amount"
+                        type="number" 
+                        placeholder="0.00" 
+                        className="pl-8 h-12 text-lg rounded-xl border-slate-300 focus-visible:ring-cyan-500"
+                        value={closingAmount}
+                        onChange={(e) => setClosingAmount(e.target.value)}
+                        autoFocus
+                    />
+                </div>
+                {!closingAmount && (
+                    <p className="text-xs text-amber-600 mt-2 flex items-center justify-center bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        ⚠️ Si dejas esto vacío, se guardará como $0.00
+                    </p>
+                )}
+              </div>
+
+              <DialogFooter className="sm:justify-center gap-2 mt-2">
+                <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="rounded-xl px-6" disabled={isSigningOut}>
+                    Cancelar
+                </Button>
                 <Button
                   className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 shadow-md shadow-red-200"
-                  onClick={async () => {
-                    try {
-                      if (auth) await signOut(auth);
-                    } finally {
-                      setConfirmOpen(false);
-                      window.location.href = "/";
-                    }
-                  }}
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
                 >
-                  Cerrar Sesión
+                  {isSigningOut ? 'Cerrando...' : 'Cerrar Turno y Salir'}
                 </Button>
               </DialogFooter>
             </DialogContent>

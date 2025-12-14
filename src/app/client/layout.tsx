@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cliente - Lavandería ANGY",
+  title: "Lavandería ANGY",
   description: "Portal del cliente para Lavandería ANGY",
 };
 

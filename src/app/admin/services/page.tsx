@@ -43,6 +43,7 @@ export default function ManageServicesPage() {
     const [newName, setNewName] = useState('');
     const [newPrice, setNewPrice] = useState('');
     const [newUnit, setNewUnit] = useState<string>('kg');
+    const [newDescription, setNewDescription] = useState<string>('');
 
     // Edit dialog
     const [editOpen, setEditOpen] = useState(false);
@@ -50,6 +51,7 @@ export default function ManageServicesPage() {
     const [editName, setEditName] = useState('');
     const [editPrice, setEditPrice] = useState('');
     const [editUnit, setEditUnit] = useState<string>('kg');
+    const [editDescription, setEditDescription] = useState<string>('');
 
     // Delete confirm
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -81,12 +83,14 @@ export default function ManageServicesPage() {
                 name: newName.trim(),
                 price: priceNum,
                 unit: newUnit || 'kg',
+                description: newDescription || '',
                 createdAt: serverTimestamp(),
             });
             toast({ title: 'Servicio añadido', description: `ID: ${docRef.id}` });
             setNewName('');
             setNewPrice('');
             setNewUnit('kg');
+            setNewDescription('');
         } catch (err: any) {
             console.error('Add service error', err);
             toast({ title: 'Error', description: err?.message || 'No se pudo crear el servicio.', variant: 'destructive' });
@@ -98,6 +102,7 @@ export default function ManageServicesPage() {
         setEditName(svc.name || '');
         setEditPrice(String(svc.price ?? ''));
         setEditUnit(svc.unit || 'kg');
+        setEditDescription(svc.description || '');
         setEditOpen(true);
     }
 
@@ -117,6 +122,7 @@ export default function ManageServicesPage() {
                 name: editName.trim(),
                 price: priceNum,
                 unit: editUnit || 'kg',
+                description: editDescription || '',
                 updatedAt: serverTimestamp(),
             });
             toast({ title: 'Servicio actualizado' });
@@ -192,7 +198,14 @@ export default function ManageServicesPage() {
                             <TableBody>
                                 {servicesList.map((svc) => (
                                     <TableRow key={svc.id}>
-                                        <TableCell className="font-medium">{svc.name}</TableCell>
+                                        <TableCell className="font-medium">
+                                            <div className="flex flex-col">
+                                                <span>{svc.name}</span>
+                                                {svc.description && (
+                                                    <span className="text-xs text-muted-foreground">{svc.description}</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>{`$${Number(svc.price || 0).toFixed(2)} ${svc.unit === 'kg' ? '/ kg' : svc.unit === 'pieces' ? '/ piezas' : ''}`}</TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
@@ -220,6 +233,10 @@ export default function ManageServicesPage() {
                                     <div className="grid grid-cols-1 gap-1">
                                         <Label htmlFor="edit-name">Nombre</Label>
                                         <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-1">
+                                        <Label htmlFor="edit-description">Descripción</Label>
+                                        <Input id="edit-description" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Breve descripción del servicio" />
                                     </div>
                                     <div className="grid grid-cols-1 gap-1">
                                         <Label htmlFor="edit-unit">Tipo</Label>
@@ -277,6 +294,10 @@ export default function ManageServicesPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="service-name-new">Nombre del Servicio</Label>
                                 <Input id="service-name-new" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Lavado Premium" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="service-description-new">Descripción</Label>
+                                <Input id="service-description-new" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Breve descripción del servicio" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="service-unit-new">Tipo</Label>
