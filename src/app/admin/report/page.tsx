@@ -11,7 +11,7 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip, // Renombrado para evitar conflicto
   Legend,
   PieChart,
   Pie,
@@ -44,10 +44,19 @@ import {
   DollarSign,
   Package,
   FileText,
-  Check
+  Check,
+  FileSpreadsheet,
+  ArrowRight,
+  Info // Icono para indicar ayuda visual
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"; // Importación del Tooltip de UI
 
 // Colores para gráficos
 const COLORS = ['#0891b2', '#0ea5e9', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#ec4899'];
@@ -105,7 +114,6 @@ export default function ReportsPage() {
       setServicesList(svcs);
 
       // 3. Órdenes (Todas - filtrar luego en memoria para flexibilidad)
-      // En producción con muchos datos, esto debería ser una query con rango de fechas
       const ordSnap = await getDocs(collection(firestore, 'orders'));
       const ords: any[] = [];
       ordSnap.forEach(d => ords.push({ id: d.id, ...d.data() }));
@@ -266,53 +274,160 @@ export default function ReportsPage() {
   }, [kpis, servicesDistribution, lowStockCount, startDate, endDate]);
 
 
-  // --- Exportación CSV ---
-  function toCSV(rows: any[], columns: string[]) {
-    const header = columns.join(',');
-    const lines = rows.map(r => columns.map(c => {
-        const val = String(r[c] ?? '').replace(/"/g, '""');
-        return `"${val}"`;
-    }).join(','));
-    return [header, ...lines].join('\n');
-  }
-
-  function downloadCSV(filename: string, csv: string) {
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  // --- Exportación CSV Profesional ---
+  
+  function downloadCSV(filename: string, csvContent: string) {
+    // Agregar BOM para que Excel reconozca UTF-8 (acentos y ñ)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.click();
+    URL.revokeObjectURL(url);
   }
 
-  function exportOrders() {
-    const rows = filteredOrders.map(o => ({
-        ID: o.id,
-        Cliente: o.clientName || 'Anónimo',
-        Fecha: o.createdAt?.toDate ? format(o.createdAt.toDate(), 'yyyy-MM-dd HH:mm') : '',
-        Servicio: o.serviceName || 'Varios',
-        Total: o.estimatedTotal || 0,
-        Estado: o.status,
-        Pago: o.paymentStatus || 'pendiente'
-    }));
-    const csv = toCSV(rows, ['ID', 'Cliente', 'Fecha', 'Servicio', 'Total', 'Estado', 'Pago']);
-    downloadCSV(`Reporte_Ventas_${startDate}_${endDate}.csv`, csv);
+  function exportFullReport() {
+    // A. PREPARAR DATOS
+    
+    // 1. Logs de Agotamiento de Inventario
+    const depletionLogs = auditData.filter(log => log.action === 'inventory-depletion' || log.action === 'update' && log.after?.stock === 0);
+    
+    // 2. Mapeo de última fecha de agotamiento por producto
+    const lastDepletionMap: Record<string, string> = {};
+    depletionLogs.forEach(log => {
+        if (log.resourceId) {
+            const date = log.createdAt?.toDate ? format(log.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : '-';
+            lastDepletionMap[log.resourceId] = date;
+        }
+    });
+
+    // 3. Filas de Inventario con fechas
+    const inventoryRows = inventoryList.map(item => {
+        const qty = Number(item.quantity ?? item.stock ?? 0);
+        const min = Number(item.minThreshold ?? 0);
+        let status = 'OK';
+        if (qty === 0) status = 'AGOTADO';
+        else if (qty <= min) status = 'BAJO';
+
+        const lastDepletion = lastDepletionMap[item.id] || 'N/A';
+        
+        return [
+            clean(item.name),
+            clean(item.category || 'General'),
+            qty,
+            min,
+            clean(item.unit || 'kg'),
+            clean(status),
+            clean(lastDepletion)
+        ];
+    });
+
+    // 4. Filas de Órdenes
+    const orderRows = filteredOrders.map(o => {
+        const dateStr = parseOrderDate(o) ? format(parseOrderDate(o) as Date, 'yyyy-MM-dd HH:mm') : '-';
+        const amount = Number(o.estimatedTotal || o.montoTotal || 0).toFixed(2);
+        
+        const details = o.items && o.items.length > 0 
+            ? o.items.map((i: any) => `${i.serviceName} (x${i.quantity})`).join('; ')
+            : `${o.quantity || 1} ${o.unit || ''}`;
+
+        return [
+            clean(o.id.slice(0, 8).toUpperCase()),
+            clean(o.clientName || 'Anónimo'),
+            clean(dateStr),
+            clean(o.serviceName || 'Varios'),
+            clean(details),
+            amount,
+            clean((o.status || '').toUpperCase()),
+            clean((o.paymentStatus || 'pendiente').toUpperCase())
+        ];
+    });
+
+    // B. CONSTRUCCIÓN DEL CSV UNIFICADO
+
+    const csvLines = [];
+
+    csvLines.push(["LAVANDERÍA ANGY - REPORTE GERENCIAL INTEGRAL"]);
+    csvLines.push([`Generado el: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]);
+    csvLines.push([`Periodo analizado: ${format(new Date(startDate), 'dd/MM/yyyy')} al ${format(new Date(endDate), 'dd/MM/yyyy')}`]);
+    csvLines.push([]); 
+
+    csvLines.push(["--- RESUMEN EJECUTIVO ---"]);
+    csvLines.push(["Indicador", "Valor"]);
+    csvLines.push([`Ventas Totales`, `$${kpis.totalSales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`]);
+    csvLines.push([`Total Pedidos`, `${kpis.totalOrders}`]);
+    csvLines.push([`Ticket Promedio`, `$${kpis.avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`]);
+    csvLines.push([`Alertas de Inventario`, `${lowStockCount}`]);
+    csvLines.push([]);
+    csvLines.push([]);
+
+    csvLines.push(["--- DETALLE DE VENTAS (ORDENES) ---"]);
+    csvLines.push(['ID PEDIDO', 'CLIENTE', 'FECHA CONSUMO', 'SERVICIO', 'DETALLE', 'MONTO', 'ESTADO', 'PAGO']);
+    orderRows.forEach(row => csvLines.push(row));
+    csvLines.push([]);
+    csvLines.push([]);
+
+    csvLines.push(["--- ESTADO DE INVENTARIO Y FECHAS CRÍTICAS ---"]);
+    csvLines.push(['PRODUCTO', 'CATEGORÍA', 'STOCK ACTUAL', 'STOCK MÍNIMO', 'UNIDAD', 'ESTADO', 'ÚLTIMO AGOTAMIENTO']);
+    inventoryRows.forEach(row => csvLines.push(row));
+    csvLines.push([]);
+    csvLines.push([]);
+
+    // Historial de Agotamientos (simplificado) - si se necesita más detalle de usuarios, se requeriría cargar la colección de users como en el otro archivo, pero para mantenerlo simple usamos el email del log.
+    csvLines.push(["--- HISTORIAL DE AGOTAMIENTOS (AUDITORÍA) ---"]);
+    csvLines.push(['FECHA Y HORA', 'PRODUCTO (ID)', 'ACCIÓN', 'USUARIO RESPONSABLE']);
+    if (depletionLogs.length === 0) {
+        csvLines.push(["Sin registros de agotamiento en este periodo."]);
+    } else {
+        depletionLogs.forEach(log => {
+            const date = log.createdAt?.toDate ? format(log.createdAt.toDate(), 'yyyy-MM-dd HH:mm') : '-';
+            const prodName = inventoryList.find(i => i.id === log.resourceId)?.name || log.resourceId;
+            csvLines.push([
+                clean(date),
+                clean(prodName),
+                "AGOTADO (Stock llegó a 0)",
+                clean(log.actorEmail || 'Sistema')
+            ]);
+        });
+    }
+
+    const csvContent = csvLines.map(row => row.join(',')).join('\n');
+    downloadCSV(`Reporte_Integral_${format(new Date(), 'yyyyMMdd')}.csv`, csvContent);
   }
+
+  // Helper para limpiar strings en CSV
+  const clean = (val: any) => {
+    const str = String(val || '');
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
 
   // --- Componentes UI ---
 
-  const StatCard = ({ title, value, icon: Icon, colorClass }: any) => (
-      <Card className="border-0 shadow-md">
-          <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-                  <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-              </div>
-              <div className={`p-3 rounded-xl ${colorClass}`}>
-                  <Icon className="w-6 h-6" />
-              </div>
-          </CardContent>
-      </Card>
+  const StatCard = ({ title, value, icon: Icon, colorClass, description }: any) => (
+      <TooltipProvider>
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
+            <Card className="border-0 shadow-md hover:shadow-lg transition-all cursor-help hover:-translate-y-1">
+                <CardContent className="p-6 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+                        <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+                    </div>
+                    <div className={`p-3 rounded-xl ${colorClass}`}>
+                        <Icon className="w-6 h-6" />
+                    </div>
+                </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-800 text-white border-0 shadow-xl rounded-xl p-3 max-w-xs">
+            <p className="text-sm leading-relaxed">{description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
   );
 
   return (
@@ -329,86 +444,98 @@ export default function ReportsPage() {
       <div className="relative z-10 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 text-white">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 text-white">
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-2 ring-white/10">
                     <BarChartIcon className="h-8 w-8 text-white" />
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Reportes y Análisis</h1>
-                    <p className="text-cyan-50 opacity-90">Métricas de rendimiento y exportación de datos</p>
+                    <p className="text-cyan-50 opacity-90 font-medium">Métricas clave y exportación de datos</p>
                 </div>
             </div>
             
             {/* Filtros de Fecha */}
-            <Card className="border-0 bg-white/10 backdrop-blur-md text-white p-1.5 flex flex-col sm:flex-row gap-2 rounded-xl shadow-inner">
-                <div className="flex items-center gap-2 px-2">
-                    <CalendarIcon className="w-4 h-4 text-cyan-200" />
-                    <span className="text-sm font-medium">Periodo:</span>
+            <div className="bg-white/95 backdrop-blur-sm p-1.5 rounded-2xl shadow-lg border border-white/20 flex flex-col sm:flex-row items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl">
+                    <CalendarIcon className="w-4 h-4 text-slate-500" />
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Rango</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Input 
-                        type="date" 
-                        value={startDate} 
-                        onChange={(e) => setStartDate(e.target.value)} 
-                        className="h-8 w-36 bg-white/90 text-slate-800 border-0 rounded-lg text-xs"
-                    />
-                    <span className="text-xs">a</span>
-                    <Input 
-                        type="date" 
-                        value={endDate} 
-                        onChange={(e) => setEndDate(e.target.value)} 
-                        className="h-8 w-36 bg-white/90 text-slate-800 border-0 rounded-lg text-xs"
-                    />
+                <div className="flex items-center gap-2 px-2">
+                    <div className="relative">
+                        <Input 
+                            type="date" 
+                            value={startDate} 
+                            onChange={(e) => setStartDate(e.target.value)} 
+                            className="h-9 w-36 bg-transparent border-slate-200 rounded-lg text-sm focus:bg-white transition-colors text-black"
+                        />
+                    </div>
+                    <span className="text-slate-400 font-medium">➔</span>
+                    <div className="relative">
+                        <Input 
+                            type="date" 
+                            value={endDate} 
+                            onChange={(e) => setEndDate(e.target.value)} 
+                            className="h-9 w-36 bg-transparent border-slate-200 rounded-lg text-sm focus:bg-white transition-colors text-black"
+                        />
+                    </div>
                     <Button 
                         size="sm" 
                         onClick={() => fetchAuditRange(startDate, endDate)}
-                        className="h-8 bg-cyan-600 hover:bg-cyan-500 text-white border-0"
+                        className="h-9 w-9 p-0 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white border-0"
                     >
                         <Search className="w-3 h-3" />
                     </Button>
                 </div>
-            </Card>
+            </div>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* KPIs con Tooltips */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard 
                 title="Ventas Totales" 
                 value={`$${kpis.totalSales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} 
                 icon={DollarSign} 
                 colorClass="bg-green-100 text-green-600" 
+                description="Suma total de los ingresos generados por pedidos en el periodo seleccionado (incluye pedidos pagados y pendientes)."
             />
             <StatCard 
                 title="Pedidos Registrados" 
                 value={kpis.totalOrders} 
                 icon={Package} 
                 colorClass="bg-blue-100 text-blue-600" 
+                description="Número total de órdenes recibidas en el sistema durante el rango de fechas, sin importar su estado actual."
             />
             <StatCard 
                 title="Ticket Promedio" 
                 value={`$${kpis.avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} 
                 icon={TrendingUp} 
                 colorClass="bg-purple-100 text-purple-600" 
+                description="Valor promedio de venta por cliente. Se calcula dividiendo las Ventas Totales entre el número de Pedidos Registrados."
             />
             <StatCard 
                 title="Pedidos Completados" 
                 value={kpis.completedOrders} 
                 icon={Check} 
                 colorClass="bg-orange-100 text-orange-600" 
+                description="Cantidad de órdenes que han sido marcadas como 'Listas para entrega' o 'Entregadas' exitosamente en este periodo."
             />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             
-            {/* Gráfico de Ventas (Area Chart) */}
-            <Card className="lg:col-span-2 shadow-lg border-0 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-white border-b border-slate-100 pb-4">
-                    <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-cyan-600" />
-                        Ingresos por Día
-                    </CardTitle>
-                    <CardDescription>Comportamiento de ventas en el periodo seleccionado.</CardDescription>
+            {/* Gráfico de Ventas */}
+            <Card className="lg:col-span-2 shadow-lg border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm">
+                <CardHeader className="border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-50 rounded-lg">
+                            <TrendingUp className="h-5 w-5 text-cyan-600" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg text-slate-800">Evolución de Ingresos</CardTitle>
+                            <CardDescription>Tendencia diaria de ventas en el periodo seleccionado.</CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="pt-6">
                     <div className="h-[300px] w-full">
@@ -420,31 +547,36 @@ export default function ReportsPage() {
                                         <stop offset="95%" stopColor="#0891b2" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis 
                                     dataKey="displayDate" 
                                     tickLine={false} 
                                     axisLine={false} 
-                                    tick={{fill: '#64748b', fontSize: 12}} 
+                                    tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} 
                                     minTickGap={30}
+                                    dy={10}
                                 />
                                 <YAxis 
                                     tickLine={false} 
                                     axisLine={false} 
-                                    tick={{fill: '#64748b', fontSize: 12}}
+                                    tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}}
                                     tickFormatter={(val) => `$${val}`}
+                                    dx={-10}
                                 />
-                                <Tooltip 
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                <RechartsTooltip 
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
                                     formatter={(value: number) => [`$${value.toLocaleString()}`, 'Venta']}
+                                    labelStyle={{ color: '#64748b', marginBottom: '4px' }}
+                                    cursor={{ stroke: '#0891b2', strokeWidth: 1, strokeDasharray: '4 4' }}
                                 />
                                 <Area 
                                     type="monotone" 
                                     dataKey="total" 
                                     stroke="#0891b2" 
+                                    strokeWidth={3}
                                     fillOpacity={1} 
                                     fill="url(#colorSales)" 
-                                    strokeWidth={3}
+                                    animationDuration={1500}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
@@ -452,17 +584,21 @@ export default function ReportsPage() {
                 </CardContent>
             </Card>
 
-            {/* Gráfico de Distribución (Pie Chart) */}
-            <Card className="shadow-lg border-0 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-white border-b border-slate-100 pb-4">
-                    <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
-                        <PieChartIcon className="h-5 w-5 text-cyan-600" />
-                        Top Servicios
-                    </CardTitle>
-                    <CardDescription>Distribución de los servicios más solicitados.</CardDescription>
+            {/* Gráfico de Distribución */}
+            <Card className="shadow-lg border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm">
+                <CardHeader className="border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-50 rounded-lg">
+                            <PieChartIcon className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg text-slate-800">Top Servicios</CardTitle>
+                            <CardDescription>Lo más solicitado por tus clientes.</CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="h-[300px] w-full">
+                <CardContent className="pt-6 flex flex-col items-center justify-center">
+                    <div className="h-[250px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
@@ -470,65 +606,97 @@ export default function ReportsPage() {
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={60}
-                                    outerRadius={90}
+                                    outerRadius={85}
                                     paddingAngle={5}
                                     dataKey="value"
+                                    cornerRadius={6}
                                 >
                                     {servicesDistribution.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                                     ))}
                                 </Pie>
-                                <Tooltip />
-                                <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" />
+                                <RechartsTooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ fontWeight: 'bold' }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-3xl font-bold text-slate-800">{servicesDistribution.reduce((a,b)=>a+b.value,0)}</span>
+                            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total</span>
+                        </div>
+                    </div>
+                    <div className="w-full mt-4 space-y-2">
+                        {servicesDistribution.slice(0, 3).map((entry, index) => (
+                            <div key={index} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                    <span className="text-slate-600 font-medium truncate max-w-[120px]">{entry.name}</span>
+                                </div>
+                                <span className="font-bold text-slate-800">{entry.value}</span>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>
         </div>
 
-        {/* Sección Inferior: Insights y Exportación */}
+        {/* Sección Inferior */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Insights Automáticos */}
-            <Card className="lg:col-span-2 shadow-md border-0 rounded-3xl">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
+            {/* Insights */}
+            <Card className="lg:col-span-2 shadow-md border-0 rounded-3xl bg-white">
+                <CardHeader className="pb-3 border-b border-slate-50">
+                    <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
                         <FileText className="h-5 w-5 text-amber-500" />
-                        Insights del Periodo
+                        Resumen Inteligente
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <CardContent className="pt-4">
+                    <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100/50 space-y-3">
                         {insights.length > 0 ? (
                             insights.map((insight, idx) => (
-                                <div key={idx} className="flex items-start gap-2 text-sm text-slate-700">
-                                    <span className="text-cyan-500 mt-1">•</span>
-                                    <p>{insight}</p>
+                                <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
+                                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                    <p className="leading-relaxed">{insight}</p>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm text-slate-400 italic">No hay datos suficientes para generar insights.</p>
+                            <div className="flex flex-col items-center justify-center py-6 text-slate-400">
+                                <Search className="h-8 w-8 mb-2 opacity-20" />
+                                <p className="text-sm">No hay suficientes datos para generar insights en este periodo.</p>
+                            </div>
                         )}
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Acciones de Exportación */}
-            <Card className="shadow-md border-0 rounded-3xl bg-slate-900 text-white">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Exportar Datos</CardTitle>
-                    <CardDescription className="text-slate-400">Descarga reportes en formato CSV.</CardDescription>
+            {/* Exportar */}
+            <Card className="shadow-lg border-0 rounded-3xl bg-slate-900 text-white overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+                
+                <CardHeader className="pb-2 relative z-10">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Download className="h-5 w-5 text-cyan-400" />
+                        Exportar Datos
+                    </CardTitle>
+                    <CardDescription className="text-slate-400">Descarga el reporte unificado en formato CSV para Excel.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 pt-4">
+                <CardContent className="space-y-3 pt-4 relative z-10">
                     <Button 
                         variant="secondary" 
-                        className="w-full justify-start bg-white/10 hover:bg-white/20 text-white border-0 h-12"
-                        onClick={exportOrders}
+                        className="w-full justify-start bg-white/10 hover:bg-white/20 text-white border-0 h-14 rounded-xl transition-all group"
+                        onClick={exportFullReport}
                     >
-                        <Download className="mr-3 h-5 w-5" /> Reporte de Ventas
+                        <div className="bg-cyan-500/20 p-2 rounded-lg mr-3 group-hover:bg-cyan-500/30 transition-colors">
+                            <FileSpreadsheet className="h-5 w-5 text-cyan-300" /> 
+                        </div>
+                        <div className="flex flex-col items-start text-left">
+                            <span className="text-sm font-bold text-white">Reporte Gerencial Completo</span>
+                            <span className="text-[10px] text-slate-300 opacity-80">Incluye ventas, inventario y alertas</span>
+                        </div>
+                        <ArrowRight className="ml-auto h-4 w-4 text-slate-500 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                     </Button>
-                    {/* Botones adicionales pueden ir aquí */}
                 </CardContent>
             </Card>
         </div>

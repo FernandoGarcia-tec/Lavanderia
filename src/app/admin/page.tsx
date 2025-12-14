@@ -5,7 +5,7 @@ import {
   AreaChart,
   CartesianGrid,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as RechartsTooltip, // Renombrado para evitar conflicto
   XAxis,
   YAxis,
 } from "recharts";
@@ -18,9 +18,10 @@ import {
   Package, 
   AlertTriangle,
   TrendingUp,
-  Activity
+  Activity,
+  CalendarCheck
 } from "lucide-react";
-import { format, subMonths } from 'date-fns';
+import { format, subMonths, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Card,
@@ -39,12 +40,19 @@ import { useFirestore, useAuth } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function AdminDashboard() {
   const firestore = useFirestore();
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    income: 0,
+    incomeToday: 0,
+    incomeMonth: 0,
     pendingUsers: 0,
     lowStock: 0,
     activeOrders: 0
@@ -56,9 +64,8 @@ export default function AdminDashboard() {
 
     const loadDashboardData = async () => {
       try {
-        // A. Calcular Ingresos Mensuales (Últimos 6 meses)
         const ordersRef = collection(firestore, 'orders');
-        const ordersSnap = await getDocs(ordersRef); // En prod: usar query por fecha
+        const ordersSnap = await getDocs(ordersRef); 
         
         const map: Record<string, number> = {};
         const today = new Date();
@@ -71,12 +78,12 @@ export default function AdminDashboard() {
         }
 
         let totalIncomeMonth = 0;
+        let totalIncomeToday = 0;
         let activeOrdersCount = 0;
         const currentMonthKey = format(today, 'yyyy-MM');
 
         ordersSnap.forEach(doc => {
           const o = doc.data();
-          // Fecha: Priorizar fecha de recepción, luego creación
           const dRaw = o.receivedAt?.toDate ? o.receivedAt.toDate() : (o.createdAt?.toDate ? o.createdAt.toDate() : null);
           
           if (o.status !== 'entregado' && o.status !== 'cancelado') {
@@ -85,7 +92,7 @@ export default function AdminDashboard() {
 
           if (!dRaw) return;
           const key = format(dRaw, 'yyyy-MM');
-          const amount = Number(o.estimatedTotal || 0);
+          const amount = Number(o.estimatedTotal || o.montoTotal || 0);
 
           if (map[key] !== undefined) {
             map[key] += amount;
@@ -94,21 +101,29 @@ export default function AdminDashboard() {
           if (key === currentMonthKey) {
             totalIncomeMonth += amount;
           }
+
+          if (isSameDay(dRaw, today)) {
+            totalIncomeToday += amount;
+          }
         });
 
         const chartData = Object.entries(map).map(([month, total]) => {
-           // Convertir '2023-10' a 'Oct'
            const [y, m] = month.split('-');
            const dateObj = new Date(parseInt(y), parseInt(m) - 1);
            return {
-             name: format(dateObj, 'MMM', { locale: es }), // Ene, Feb...
+             name: format(dateObj, 'MMM', { locale: es }), 
              fullDate: month,
              total: total
            };
         });
 
         setMonthlyData(chartData);
-        setStats(prev => ({ ...prev, income: totalIncomeMonth, activeOrders: activeOrdersCount }));
+        setStats(prev => ({ 
+            ...prev, 
+            incomeMonth: totalIncomeMonth, 
+            incomeToday: totalIncomeToday,
+            activeOrders: activeOrdersCount 
+        }));
 
       } catch (err) {
         console.error("Error loading dashboard data", err);
@@ -118,10 +133,10 @@ export default function AdminDashboard() {
     loadDashboardData();
   }, [firestore]);
 
-  // 2. Suscripción en tiempo real a Inventario (Alertas)
+  // 2. Suscripción a Inventario (Alertas)
   useEffect(() => {
     if (!firestore) return;
-    const q = query(collection(firestore, 'inventory')); // Optimizar en prod: where('stock', '<=', 'minThreshold') no es directo sin guardar minThreshold
+    const q = query(collection(firestore, 'inventory'));
     const unsub = onSnapshot(q, (snap) => {
       let count = 0;
       snap.forEach(doc => {
@@ -178,11 +193,12 @@ export default function AdminDashboard() {
         {/* Métricas Principales (KPIs) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatCard 
-                title="Ingresos (Mes)" 
-                value={`$${stats.income.toLocaleString()}`} 
+                title="Ingresos (Hoy)" 
+                value={`$${stats.incomeToday.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} 
                 icon={DollarSign} 
                 color="green" 
-                trend="+12% vs mes anterior"
+                trend={`Mes: $${stats.incomeMonth.toLocaleString('es-MX')}`}
+                description="Total de ventas registradas durante el día de hoy (desde las 00:00 hrs)."
             />
             <StatCard 
                 title="Pedidos Activos" 
@@ -190,6 +206,7 @@ export default function AdminDashboard() {
                 icon={Package} 
                 color="blue" 
                 trend="En proceso"
+                description="Número total de pedidos que aún no han sido entregados ni cancelados."
             />
             <StatCard 
                 title="Usuarios Pendientes" 
@@ -197,6 +214,7 @@ export default function AdminDashboard() {
                 icon={Users} 
                 color="orange" 
                 trend="Requieren aprobación"
+                description="Usuarios nuevos registrados que están esperando tu aprobación para acceder al sistema."
             />
             <StatCard 
                 title="Alertas de Stock" 
@@ -204,6 +222,7 @@ export default function AdminDashboard() {
                 icon={AlertTriangle} 
                 color="red" 
                 trend="Insumos bajos"
+                description="Artículos de inventario que están agotados o por debajo del mínimo establecido."
             />
         </div>
 
@@ -248,7 +267,7 @@ export default function AdminDashboard() {
                         tick={{fill: '#64748b', fontSize: 12}}
                         tickFormatter={(value) => `$${value}`}
                       />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         itemStyle={{ color: '#0e7490', fontWeight: 'bold' }}
                         formatter={(value: number) => [`$${value.toLocaleString()}`, "Ingresos"]}
@@ -312,7 +331,7 @@ export default function AdminDashboard() {
 
 // --- Componentes Auxiliares ---
 
-function StatCard({ title, value, icon: Icon, color, trend }: any) {
+function StatCard({ title, value, icon: Icon, color, trend, description }: any) {
     const colorClasses: Record<string, string> = {
         green: "bg-green-100 text-green-600",
         blue: "bg-blue-100 text-blue-600",
@@ -321,24 +340,34 @@ function StatCard({ title, value, icon: Icon, color, trend }: any) {
     };
 
     return (
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow rounded-2xl overflow-hidden">
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-                        <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-                    </div>
-                    <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
-                        <Icon className="w-5 h-5" />
-                    </div>
-                </div>
-                <div className="mt-4 flex items-center text-xs">
-                    <span className="text-slate-400 font-medium">{trend}</span>
-                </div>
-            </CardContent>
-        </Card>
+        <TooltipProvider>
+            <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                    <Card className="border-0 shadow-md hover:shadow-lg transition-shadow rounded-2xl overflow-hidden cursor-help">
+                        <CardContent className="p-5">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+                                    <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+                                </div>
+                                <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+                                    <Icon className="w-5 h-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 flex items-center text-xs">
+                                <span className="text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md">{trend}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TooltipTrigger>
+                <TooltipContent className="bg-slate-800 text-white border-0 shadow-xl rounded-xl p-3 max-w-xs">
+                     <p className="text-xs leading-relaxed">{description}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }
+
 
 function PendingList() {
   const firestore = useFirestore();
@@ -419,7 +448,7 @@ function StockAlerts() {
         const min = Number(it.minThreshold ?? 10);
         return qty <= min;
       });
-      setAlerts(low.slice(0, 6)); // Mostrar solo los primeros 6
+      setAlerts(low.slice(0, 6)); 
     });
     return () => unsub();
   }, [firestore]);
@@ -438,7 +467,7 @@ function StockAlerts() {
       {alerts.map(item => {
           const qty = Number(item.quantity ?? item.stock ?? 0);
           const min = Number(item.minThreshold ?? 10);
-          const percent = Math.min(100, (qty / (min * 2)) * 100); // Visual bar logic
+          const percent = Math.min(100, (qty / (min * 2)) * 100); 
           const isCritical = qty === 0;
 
           return (

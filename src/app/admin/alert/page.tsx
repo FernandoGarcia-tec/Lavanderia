@@ -158,7 +158,7 @@ export default function AlertsPage() {
         {/* Resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <SummaryCard 
-                title="Stock Crítico" 
+                title="Inventario Crítico" 
                 count={stats.stock} 
                 icon={Package} 
                 color={stats.stock > 0 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"} 
