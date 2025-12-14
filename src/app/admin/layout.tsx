@@ -32,7 +32,8 @@ import {
   DialogTitle, 
   DialogDescription, 
   DialogFooter, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 
 const navItems = [
@@ -40,7 +41,7 @@ const navItems = [
   { href: "/admin/users", icon: <Users />, label: "Gestión de usuarios" },
   { href: "/admin/services", icon: <Wrench />, label: "Gestionar Servicios" },
   { href: "/admin/inventory", icon: <Box />, label: "Gestionar Inventario" },
-  { href: "/admin/pedidos", icon: <ClipboardList />, label: "Gestión de pedidos" },
+  { href: "/admin/pedidos", icon: <ClipboardList />, label: "Gestión de Pedidos" },
   { href: "/admin/caja", icon: <Wallet />, label: "Caja" },
   { href: "/admin/report", icon: <BarChart />, label: "Reportes" },
   { href: "/admin/alert", icon: <Bell />, label: "Alertas" },
@@ -61,6 +62,7 @@ export default function AdminLayout({
   const userLabel = auth?.currentUser?.displayName || auth?.currentUser?.email || "Administrador";
   const userInitial = (userLabel || "A").charAt(0).toUpperCase();
 
+  // Monitor stock alerts for badge
   useEffect(() => {
     if (!firestore) return;
     const q = collection(firestore, 'inventory');
@@ -70,7 +72,7 @@ export default function AdminLayout({
       const low = items.filter(it => {
         const qty = Number(it.quantity ?? it.stockActual ?? it.cantidad ?? it.stock ?? 0);
         const min = Number(it.minThreshold ?? it.stockCritico ?? it.stockMin ?? 0);
-        return qty < min;
+        return qty <= min;
       });
       setLowCount(low.length);
     });
@@ -110,7 +112,7 @@ export default function AdminLayout({
                       </span>
                       <span className="flex-1">{item.label}</span>
                       {item.label === 'Alertas' && lowCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto h-5 px-1.5 min-w-[20px] justify-center rounded-full text-[10px]">
+                        <Badge variant="destructive" className="ml-auto h-5 px-1.5 min-w-[20px] justify-center rounded-full text-[10px] animate-pulse">
                           {lowCount}
                         </Badge>
                       )}

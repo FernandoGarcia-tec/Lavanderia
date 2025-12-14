@@ -5,8 +5,8 @@ import { HideNextDevTools } from '@/components/hide-next-devtools';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Prototipo de Plataforma ANGY',
-  description: 'Generado por Firebase Studio',
+  title: 'Plataforma ANGY',
+  description: 'Desarrollo de software para la gestión de lavandería ANGY por José Fernando Garcia Quintero',
 };
 
 export default function RootLayout({

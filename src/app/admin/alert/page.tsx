@@ -1,15 +1,35 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useFirestore } from '@/firebase/provider';
 import { collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent, 
+  CardFooter 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Bell, 
+  AlertTriangle, 
+  Package, 
+  UserPlus, 
+  Check, 
+  Trash2, 
+  ArrowRight,
+  Info
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from "@/lib/utils";
 
 export default function AlertsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
@@ -19,6 +39,7 @@ export default function AlertsPage() {
   useEffect(() => {
     if (!firestore) return;
 
+    // 1. Alertas de Stock Bajo (Calculado en tiempo real)
     const invCol = collection(firestore, 'inventory');
     const unsubInv = onSnapshot(invCol, (snap: any) => {
       const items: any[] = [];
@@ -26,11 +47,12 @@ export default function AlertsPage() {
       const low = items.filter(it => {
         const qty = Number(it.quantity ?? it.stockActual ?? it.cantidad ?? it.stock ?? 0);
         const min = Number(it.minThreshold ?? it.stockCritico ?? it.stockMin ?? 0);
-        return qty < min;
+        return qty <= min; // Incluye agotados (0) y bajos
       });
       setInventoryAlerts(low);
     });
 
+    // 2. Usuarios Pendientes
     const usersQ = query(collection(firestore, 'users'), where('status', '==', 'pendiente'));
     const unsubUsers = onSnapshot(usersQ, (snap: any) => {
       const items: any[] = [];
@@ -38,18 +60,19 @@ export default function AlertsPage() {
       setPendingUsers(items);
     });
 
-    // Real-time inventory notifications (alerts collection)
+    // 3. Notificaciones Manuales/Automáticas de Inventario (Colección 'alerts')
     const alertsCol = collection(firestore, 'alerts');
+    // En prod: orderBy('createdAt', 'desc') requiere índice compuesto si se combina con where
     const unsubAlerts = onSnapshot(alertsCol, (snap: any) => {
       const items: any[] = [];
       snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
-      // sort newest first if timestamp available
-      items.sort((a,b) => {
-        const ta = a.createdAt?.seconds || 0;
-        const tb = b.createdAt?.seconds || 0;
-        return tb - ta;
-      });
-      setInventoryNotifications(items.filter(n => n.type === 'inventory'));
+      
+      // Filtrar y ordenar en cliente para evitar problemas de índices en dev
+      const activeAlerts = items
+        .filter(n => n.type === 'inventory' && n.status !== 'dismissed')
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        
+      setInventoryNotifications(activeAlerts);
     });
 
     return () => {
@@ -59,11 +82,21 @@ export default function AlertsPage() {
     };
   }, [firestore]);
 
+  const stats = useMemo(() => ({
+    total: inventoryAlerts.length + pendingUsers.length + inventoryNotifications.length,
+    stock: inventoryAlerts.length,
+    users: pendingUsers.length,
+    manual: inventoryNotifications.length
+  }), [inventoryAlerts, pendingUsers, inventoryNotifications]);
+
   async function dismissNotification(id: string) {
     if (!firestore || !id) return;
     try {
       setProcessingId(id);
       await updateDoc(doc(firestore, 'alerts', id), { status: 'dismissed', dismissedAt: serverTimestamp() });
+      toast({ title: "Alerta descartada", description: "Se ha marcado como leída." });
+    } catch (e) {
+      toast({ title: "Error", description: "No se pudo descartar la alerta.", variant: "destructive" });
     } finally {
       setProcessingId(null);
     }
@@ -74,15 +107,34 @@ export default function AlertsPage() {
     try {
       setProcessingId(id);
       await deleteDoc(doc(firestore, 'alerts', id));
+      toast({ title: "Alerta eliminada", description: "Registro borrado permanentemente." });
+    } catch (e) {
+      toast({ title: "Error", description: "No se pudo eliminar la alerta.", variant: "destructive" });
     } finally {
       setProcessingId(null);
     }
   }
 
+  // Componente de Tarjeta de Resumen
+  const SummaryCard = ({ title, count, icon: Icon, color }: any) => (
+    <Card className="border-0 shadow-md bg-white">
+        <CardContent className="p-4 flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-slate-500">{title}</p>
+                <h3 className="text-2xl font-bold text-slate-800">{count}</h3>
+            </div>
+            <div className={`p-3 rounded-xl ${color}`}>
+                <Icon className="w-6 h-6" />
+            </div>
+        </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans p-4 md:p-8">
+      
       {/* Fondo superior */}
-      <div className="absolute top-0 left-0 w-full h-[40vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
+      <div className="absolute top-0 left-0 w-full h-[40vh] bg-gradient-to-br from-cyan-600 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
         <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
         <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
         <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
@@ -91,149 +143,193 @@ export default function AlertsPage() {
 
       {/* Contenido principal */}
       <div className="relative z-10 w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        
         {/* Encabezado */}
         <div className="flex items-center gap-4 mb-8 text-white">
           <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-2 ring-white/10">
-            {/* Icono: campana */}
-            <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
+            <Bell className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Alertas</h1>
-            <p className="text-cyan-50 opacity-90">Inventario, usuarios y eventos</p>
+            <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm">Centro de Alertas</h1>
+            <p className="text-cyan-50 opacity-90">Monitoreo de eventos críticos del sistema</p>
           </div>
         </div>
 
+        {/* Resumen */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <SummaryCard 
+                title="Stock Crítico" 
+                count={stats.stock} 
+                icon={Package} 
+                color={stats.stock > 0 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"} 
+            />
+            <SummaryCard 
+                title="Usuarios Nuevos" 
+                count={stats.users} 
+                icon={UserPlus} 
+                color={stats.users > 0 ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-600"} 
+            />
+            <SummaryCard 
+                title="Notificaciones" 
+                count={stats.manual} 
+                icon={Info} 
+                color="bg-blue-100 text-blue-600" 
+            />
+        </div>
+
         <div className="space-y-6">
-          <Card>
-        <CardHeader>
-          <CardTitle>Alertas</CardTitle>
-          <CardDescription>Gestiona alertas del sistema: inventario, usuarios y eventos importantes.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Alertas de Inventario</h3>
+          
+          {/* SECCIÓN 1: INVENTARIO CRÍTICO */}
+          <Card className="shadow-xl border-0 rounded-3xl overflow-hidden backdrop-blur-sm bg-white/95">
+            <CardHeader className="bg-white border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-500" />
+                      <CardTitle className="text-lg text-slate-800">Atención Inmediata: Inventario</CardTitle>
+                  </div>
+                  <Button variant="outline" size="sm" asChild className="text-slate-500 hover:text-slate-800">
+                    <Link href="/admin/inventory">Gestionar Todo <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                  </Button>
+              </div>
+              <CardDescription>Artículos agotados o por debajo del mínimo permitido.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {inventoryAlerts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 text-slate-400 bg-slate-50/50">
+                   <Check className="h-8 w-8 mb-2 opacity-50 text-green-500" />
+                   <p className="text-sm font-medium">Todo el inventario está bajo control.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {inventoryAlerts.map(it => {
+                     const isOut = (it.quantity ?? it.stock ?? 0) === 0;
+                     return (
+                      <div key={it.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <div className={cn("p-2 rounded-lg", isOut ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600")}>
+                                <Package className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <div className="font-semibold text-slate-800">{it.name || 'Sin nombre'}</div>
+                                <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
+                                    <span className={cn("font-medium", isOut ? "text-red-500" : "text-orange-500")}>
+                                        Stock: {it.quantity ?? 0}
+                                    </span>
+                                    <span>•</span>
+                                    <span>Mínimo: {it.minThreshold ?? 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl" asChild>
+                          <Link href={`/admin/inventory?highlight=${it.id}`}>Reponer</Link>
+                        </Button>
+                      </div>
+                     );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SECCIÓN 2: USUARIOS PENDIENTES */}
+          <Card className="shadow-lg border-0 rounded-3xl overflow-hidden backdrop-blur-sm bg-white/95">
+            <CardHeader className="bg-white border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
-                <Badge variant="destructive">{inventoryAlerts.length}</Badge>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/inventory">Gestionar inventario</Link>
-                </Button>
+                  <UserPlus className="h-5 w-5 text-orange-500" />
+                  <CardTitle className="text-lg text-slate-800">Solicitudes de Acceso</CardTitle>
               </div>
-            </div>
-
-            {inventoryAlerts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay artículos con stock bajo.</p>
-            ) : (
-              <div className="grid gap-2">
-                {inventoryAlerts.map(it => (
-                  <div key={it.id} className="flex items-center justify-between border rounded p-3">
-                    <div>
-                      <div className="font-medium">{it.name || it.nombreInsumo || it.nombre}</div>
-                      <div className="text-sm text-muted-foreground">En stock: {it.quantity ?? it.stockActual ?? it.cantidad ?? it.stock ?? 0} — Mínimo: {it.minThreshold ?? it.stockCritico ?? 0}</div>
+              <CardDescription>Usuarios registrados esperando aprobación manual.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+               {pendingUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 text-slate-400 bg-slate-50/50">
+                   <Check className="h-8 w-8 mb-2 opacity-50 text-green-500" />
+                   <p className="text-sm font-medium">No hay solicitudes pendientes.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {pendingUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold border border-orange-200">
+                             {(u.name || u.email || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                             <div className="font-semibold text-slate-800">{u.name || 'Usuario'}</div>
+                             <div className="text-xs text-slate-500">{u.email}</div>
+                          </div>
+                      </div>
+                      <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl" asChild>
+                            <Link href="/admin/users">Revisar</Link>
+                          </Button>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SECCIÓN 3: HISTORIAL DE NOTIFICACIONES */}
+          <Card className="shadow-lg border-0 rounded-3xl overflow-hidden backdrop-blur-sm bg-white/95">
+             <CardHeader className="bg-white border-b border-slate-100 pb-4">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Button size="sm" asChild>
-                        <Link href={`/admin/inventory?highlight=${it.id}`}>Ver</Link>
-                      </Button>
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/admin/alert/create-purchase?item=${it.id}`}>Crear solicitud</Link>
-                      </Button>
+                        <Info className="h-5 w-5 text-blue-500" />
+                        <CardTitle className="text-lg text-slate-800">Historial de Eventos</CardTitle>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-600">{inventoryNotifications.length} activas</Badge>
+                </div>
+             </CardHeader>
+             <CardContent className="p-0">
+                {inventoryNotifications.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400">Sin notificaciones recientes.</div>
+                ) : (
+                    <div className="divide-y divide-slate-100">
+                        {inventoryNotifications.map(n => (
+                            <div key={n.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1 p-1.5 bg-blue-50 rounded-md text-blue-600">
+                                        <Bell className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-slate-800 text-sm">{n.name || 'Alerta de sistema'}</p>
+                                        <p className="text-xs text-slate-500">
+                                            Estado: <span className="font-semibold">{n.status}</span> · 
+                                            Stock registrado: {n.stock}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                    <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="text-slate-400 hover:text-green-600 hover:bg-green-50 h-8 px-2"
+                                        disabled={processingId === n.id}
+                                        onClick={() => dismissNotification(n.id)}
+                                        title="Marcar como leída"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 px-2"
+                                        disabled={processingId === n.id}
+                                        onClick={() => deleteNotification(n.id)}
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+             </CardContent>
+          </Card>
 
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Nuevos Usuarios Pendientes</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{pendingUsers.length}</Badge>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/users">Gestionar usuarios</Link>
-                </Button>
-              </div>
-            </div>
-
-            {pendingUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay usuarios pendientes.</p>
-            ) : (
-              <div className="grid gap-2">
-                {pendingUsers.map(u => (
-                  <div key={u.id} className="flex items-center justify-between border rounded p-3">
-                    <div>
-                      <div className="font-medium">{u.name || u.nombreCompleto || u.email}</div>
-                      <div className="text-sm text-muted-foreground">Rol: {u.role || u.rol || 'cliente'}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" asChild>
-                        <Link href={`/admin/users?highlight=${u.id}`}>Ver</Link>
-                      </Button>
-                      <Button size="sm" variant="destructive" asChild>
-                        <Link href={`/admin/users?action=delete&uid=${u.id}`}>Eliminar</Link>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Otros eventos recientes</h3>
-              <div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/report">Ver reportes</Link>
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">Puedes ver registros de auditoría y otros eventos en el <Link href="/admin/report" className="underline">informe</Link>.</p>
-          </section>
-
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Notificaciones Recientes de Inventario</h3>
-              <Badge variant="outline">{inventoryNotifications.length}</Badge>
-            </div>
-            {inventoryNotifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sin notificaciones todavía.</p>
-            ) : (
-              <div className="space-y-2">
-                {inventoryNotifications.slice(0, 15).map(n => (
-                  <div key={n.id} className="flex items-start justify-between rounded border p-3 bg-white">
-                    <div>
-                      <div className="font-medium">{n.name}</div>
-                      <div className="text-xs text-muted-foreground">Estado: {n.status} · Stock: {n.stock} · Mínimo: {n.minThreshold}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/admin/inventory?highlight=${n.itemId}`}>Ver</Link>
-                      </Button>
-                      <Button size="sm" variant="outline" disabled={processingId===n.id} onClick={() => dismissNotification(n.id)}>
-                        {processingId===n.id ? '...' : 'Marcar atendida'}
-                      </Button>
-                      <Button size="sm" variant="destructive" disabled={processingId===n.id} onClick={() => deleteNotification(n.id)}>
-                        {processingId===n.id ? '...' : 'Eliminar'}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </CardContent>
-        <CardFooter>
-          <div className="flex justify-end w-full">
-            <Button asChild>
-              <Link href="/admin">Volver al panel</Link>
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
         </div>
       </div>
     </div>
