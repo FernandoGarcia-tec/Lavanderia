@@ -22,7 +22,8 @@ import {
   Brush,
   Plus,
   Trash2,
-  ShoppingBasket
+  ShoppingBasket,
+  PenTool
 } from "lucide-react";
 import { 
   Card, 
@@ -50,6 +51,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
   collection, 
@@ -58,7 +66,9 @@ import {
   query, 
   where, 
   serverTimestamp, 
-  Timestamp 
+  Timestamp,
+  doc, 
+  setDoc 
 } from "firebase/firestore";
 import { writeAudit } from "@/lib/audit";
 import { useAuth, useFirestore } from "@/firebase/provider";
@@ -82,6 +92,7 @@ interface CartItem {
   quantity: number;
   priceUnit: number;
   subtotal: number;
+  isCustom?: boolean;
 }
 
 export default function ServicesPage() {
@@ -108,12 +119,18 @@ export default function ServicesPage() {
   const [creatingClient, setCreatingClient] = useState(false);
   const [defaultPass, setDefaultPass] = useState<string>('Cambio123!');
 
-  // Service Selection (Temporary state for adding to cart)
+  // Service Selection
   const [servicesList, setServicesList] = useState<Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' }>>([]);
   const [tempServiceId, setTempServiceId] = useState<string>('');
   const [tempQuantity, setTempQuantity] = useState<string>('');
+  
+  // Custom Service State
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
+  const [customUnit, setCustomUnit] = useState<'kg' | 'pieces'>("kg");
 
-  // Cart Data (The actual order content)
+  // Cart Data
   const [cart, setCart] = useState<CartItem[]>([]);
 
   // Logistics & Payment
@@ -189,7 +206,8 @@ export default function ServicesPage() {
           .map(d => ({ id: d.id, ...d.data() } as any))
           .filter(c => 
             (c.name && c.name.toLowerCase().includes(term)) || 
-            (c.email && c.email.toLowerCase().includes(term))
+            (c.email && c.email.toLowerCase().includes(term)) ||
+            (c.phone && c.phone.includes(term)) // Buscar también por teléfono
           )
           .slice(0, 5); 
         setClients(results);
@@ -203,7 +221,6 @@ export default function ServicesPage() {
     const timeoutId = setTimeout(search, 300);
     return () => clearTimeout(timeoutId);
   }, [searchTerm, firestore]);
-
 
   // --- Handlers ---
 
@@ -228,6 +245,11 @@ export default function ServicesPage() {
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Error al crear cliente');
       
+      // --- FIX: Asegurar guardado de teléfono en users ---
+      if (newClientPhone.trim() && j.docId) {
+          await setDoc(doc(firestore, 'users', j.docId), { phone: newClientPhone.trim() }, { merge: true });
+      }
+
       const newClient = { 
         id: j.docId || j.uid, 
         name: newClientName.trim(), 
@@ -249,6 +271,41 @@ export default function ServicesPage() {
   };
 
   const handleAddToCart = () => {
+    // Lógica para servicio personalizado
+    if (isCustomMode) {
+      if (!customName.trim() || !customPrice) {
+        toast({ title: "Datos incompletos", description: "Ingresa nombre y precio del servicio.", variant: "destructive" });
+        return;
+      }
+      const q = parseFloat(tempQuantity);
+      const p = parseFloat(customPrice);
+      if (isNaN(q) || q <= 0) {
+        toast({ title: "Cantidad inválida", variant: "destructive" });
+        return;
+      }
+      if (isNaN(p) || p <= 0) {
+        toast({ title: "Precio inválido", variant: "destructive" });
+        return;
+      }
+
+      const newItem: CartItem = {
+        serviceId: 'custom-' + Date.now(),
+        serviceName: customName,
+        unit: customUnit,
+        priceUnit: p,
+        quantity: q,
+        subtotal: q * p,
+        isCustom: true
+      };
+      setCart([...cart, newItem]);
+      setTempQuantity('');
+      setCustomName('');
+      setCustomPrice('');
+      toast({ title: "Agregado", description: "Servicio manual añadido." });
+      return;
+    }
+
+    // Lógica para servicio estándar
     if (!tempService) {
         toast({ title: "Selecciona un servicio", variant: "destructive" });
         return;
@@ -265,11 +322,11 @@ export default function ServicesPage() {
         unit: tempService.unit,
         priceUnit: tempService.price,
         quantity: q,
-        subtotal: q * tempService.price
+        subtotal: q * tempService.price,
+        isCustom: false
     };
 
     setCart([...cart, newItem]);
-    // Reset selection but keep service id maybe? No, reset for fresh start
     setTempQuantity('');
     toast({ title: "Agregado", description: `${tempService.name} añadido al pedido.` });
   };
@@ -288,7 +345,6 @@ export default function ServicesPage() {
       const staffUid = auth?.currentUser?.uid || null;
       const staffEmail = auth?.currentUser?.email || null;
       
-      // Construir fecha
       const deliveryDateTime = new Date(deliveryDate);
       const [hours, minutes] = deliveryTime.split(':').map(Number);
       deliveryDateTime.setHours(hours, minutes, 0, 0);
@@ -297,12 +353,9 @@ export default function ServicesPage() {
         clientId: selectedClient.id,
         clientName: selectedClient.name,
         clientEmail: selectedClient.email || null,
-        // Guardamos el array de items
+        clientPhone: selectedClient.phone || null, // <--- GUARDAR TELÉFONO EN EL PEDIDO
         items: cart,
-        // Mantener compatibilidad o resumen en el nivel superior si se desea (opcional)
-        // Para reportes simples, podríamos guardar el nombre del primer servicio o "Varios"
         serviceName: cart.length === 1 ? cart[0].serviceName : 'Varios Servicios',
-        
         estimatedTotal: parseFloat(cartTotal),
         paymentMethod,
         notes: notes.trim(),
@@ -319,7 +372,6 @@ export default function ServicesPage() {
 
       const docRef = await addDoc(collection(firestore, 'orders'), orderData);
 
-      // Audit Log
       writeAudit(firestore, {
         actorUid: staffUid,
         actorEmail: staffEmail,
@@ -331,7 +383,7 @@ export default function ServicesPage() {
 
       toast({ title: "Pedido creado con éxito", description: `Orden #${docRef.id.slice(0,6).toUpperCase()}` });
       
-      // Reset Form completemente
+      // Reset Form
       setConfirmOpen(false);
       setSelectedClient(null);
       setSearchTerm("");
@@ -342,6 +394,9 @@ export default function ServicesPage() {
       setDeliveryTime("");
       setNotes("");
       setPaymentMethod("efectivo");
+      setIsCustomMode(false);
+      setCustomName("");
+      setCustomPrice("");
       
     } catch (err: any) {
       console.error(err);
@@ -354,7 +409,6 @@ export default function ServicesPage() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)] p-4 md:p-8 space-y-6">
         
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Registrar Pedido</h1>
@@ -409,7 +463,10 @@ export default function ServicesPage() {
                                             >
                                                 <div>
                                                     <p className="font-medium text-slate-800 group-hover:text-cyan-700">{client.name}</p>
-                                                    <p className="text-xs text-slate-500">{client.email || 'Sin correo'}</p>
+                                                    <p className="text-xs text-slate-500 flex items-center gap-2">
+                                                        <span>{client.email || 'Sin correo'}</span>
+                                                        {client.phone && <span className="text-cyan-600 font-mono bg-cyan-50 px-1 rounded">📞 {client.phone}</span>}
+                                                    </p>
                                                 </div>
                                                 <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-cyan-400" />
                                             </button>
@@ -433,7 +490,10 @@ export default function ServicesPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-800">{selectedClient.name}</p>
-                                    <p className="text-sm text-slate-500">{selectedClient.email || 'Sin correo'}</p>
+                                    <div className="flex flex-col sm:flex-row sm:gap-3 text-sm text-slate-500">
+                                        <p>{selectedClient.email || 'Sin correo'}</p>
+                                        {selectedClient.phone && <p className="text-cyan-700 font-medium">📞 {selectedClient.phone}</p>}
+                                    </div>
                                 </div>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => setSelectedClient(null)} className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
@@ -444,7 +504,7 @@ export default function ServicesPage() {
                 </CardContent>
             </Card>
 
-            {/* 2. AGREGAR SERVICIOS (GRID + INPUT + LISTA) */}
+            {/* 2. AGREGAR SERVICIOS */}
             <Card className="border-slate-200 shadow-sm">
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -458,10 +518,10 @@ export default function ServicesPage() {
                     )}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Grid de selección de servicios */}
+                    {/* Grid de selección */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {servicesList.map((s) => {
-                            const isSelected = tempServiceId === s.id;
+                            const isSelected = tempServiceId === s.id && !isCustomMode;
                             const icon = Object.keys(serviceIcons).find(key => s.name.includes(key)) 
                                 ? serviceIcons[Object.keys(serviceIcons).find(key => s.name.includes(key))!] 
                                 : serviceIcons['default'];
@@ -469,7 +529,7 @@ export default function ServicesPage() {
                             return (
                                 <button
                                     key={s.id}
-                                    onClick={() => { setTempServiceId(s.id); setTempQuantity(''); }}
+                                    onClick={() => { setTempServiceId(s.id); setTempQuantity(''); setIsCustomMode(false); }}
                                     className={`
                                         flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
                                         ${isSelected 
@@ -482,48 +542,123 @@ export default function ServicesPage() {
                                         {icon}
                                     </div>
                                     <span className="text-sm font-semibold text-center leading-tight">{s.name}</span>
-                                    <span className="text-[10px] text-slate-400 mt-1">
-                                        ${s.price}/{s.unit}
-                                    </span>
+                                    <span className="text-[10px] text-slate-400 mt-1">${s.price}/{s.unit}</span>
                                 </button>
                             );
                         })}
+                        {/* Botón para Servicio Personalizado */}
+                        <button
+                            onClick={() => { setIsCustomMode(true); setTempServiceId(''); setTempQuantity(''); }}
+                            className={`
+                                flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
+                                ${isCustomMode 
+                                    ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-1 ring-cyan-200 scale-[1.02]' 
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-200 hover:bg-slate-50'
+                                }
+                            `}
+                        >
+                             <div className={`mb-2 p-2 rounded-full ${isCustomMode ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-500'}`}>
+                                <PenTool className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-semibold text-center leading-tight">Otro / Manual</span>
+                            <span className="text-[10px] text-slate-400 mt-1">Personalizado</span>
+                        </button>
                     </div>
 
-                    {/* Input de cantidad para agregar */}
-                    <div className="flex items-end gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div className="flex-1 space-y-2">
-                            <Label className="text-slate-600">
-                                {tempService ? `Cantidad de ${tempService.name} (${tempService.unit === 'kg' ? 'Kilos' : 'Piezas'})` : 'Selecciona un servicio arriba'}
-                            </Label>
-                            <div className="relative">
-                                <Input 
-                                    type="number" 
-                                    min="0" 
-                                    step={tempService?.unit === 'kg' ? '0.1' : '1'}
-                                    placeholder="0"
-                                    className="h-11 rounded-xl border-slate-200 pl-4 text-lg font-medium bg-white"
-                                    value={tempQuantity}
-                                    onChange={(e) => setTempQuantity(e.target.value)}
-                                    disabled={!tempService}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleAddToCart();
-                                    }}
-                                />
-                                {tempService && (
-                                    <div className="absolute right-3 top-3 text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">
-                                        {tempService.unit === 'kg' ? 'KG' : 'PZA'}
+                    {/* Area de Input (Dinámica) */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all">
+                        {isCustomMode ? (
+                            // --- MODO PERSONALIZADO ---
+                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-600">Nombre del Servicio</Label>
+                                        <Input 
+                                            placeholder="Ej: Lavado de Alfombra" 
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                            value={customName}
+                                            onChange={(e) => setCustomName(e.target.value)}
+                                        />
                                     </div>
-                                )}
+                                    <div className="space-y-2">
+                                        <Label className="text-slate-600">Precio Unitario</Label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="0.00" 
+                                                className="pl-7 h-11 rounded-xl border-slate-200 bg-white"
+                                                value={customPrice}
+                                                onChange={(e) => setCustomPrice(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-end gap-3">
+                                     <div className="w-1/3 space-y-2">
+                                        <Label className="text-slate-600">Unidad</Label>
+                                        <Select value={customUnit} onValueChange={(v: any) => setCustomUnit(v)}>
+                                            <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="kg">Kilos</SelectItem>
+                                                <SelectItem value="pieces">Piezas</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                     </div>
+                                     <div className="flex-1 space-y-2">
+                                        <Label className="text-slate-600">Cantidad</Label>
+                                        <Input 
+                                            type="number" 
+                                            placeholder="0" 
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                            value={tempQuantity}
+                                            onChange={(e) => setTempQuantity(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddToCart(); }}
+                                        />
+                                     </div>
+                                     <Button 
+                                        className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md"
+                                        onClick={handleAddToCart}
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" /> Agregar
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <Button 
-                            className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 disabled:opacity-50"
-                            onClick={handleAddToCart}
-                            disabled={!tempService || !tempQuantity}
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> Agregar
-                        </Button>
+                        ) : (
+                            // --- MODO ESTÁNDAR ---
+                            <div className="flex items-end gap-3 animate-in fade-in">
+                                <div className="flex-1 space-y-2">
+                                    <Label className="text-slate-600">
+                                        {tempService ? `Cantidad de ${tempService.name}` : 'Selecciona un servicio arriba'}
+                                    </Label>
+                                    <div className="relative">
+                                        <Input 
+                                            type="number" 
+                                            min="0" 
+                                            step={tempService?.unit === 'kg' ? '0.1' : '1'}
+                                            placeholder="0"
+                                            className="h-11 rounded-xl border-slate-200 pl-4 text-lg font-medium bg-white"
+                                            value={tempQuantity}
+                                            onChange={(e) => setTempQuantity(e.target.value)}
+                                            disabled={!tempService}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddToCart(); }}
+                                        />
+                                        {tempService && (
+                                            <div className="absolute right-3 top-3 text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">
+                                                {tempService.unit === 'kg' ? 'KG' : 'PZA'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <Button 
+                                    className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 disabled:opacity-50"
+                                    onClick={handleAddToCart}
+                                    disabled={!tempService || !tempQuantity}
+                                >
+                                    <Plus className="mr-2 h-4 w-4" /> Agregar
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Lista de ítems en el carrito */}
@@ -534,13 +669,14 @@ export default function ServicesPage() {
                                 {cart.map((item, index) => (
                                     <div key={index} className="flex justify-between items-center p-3 bg-white hover:bg-slate-50 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-600">
-                                                {Object.keys(serviceIcons).find(key => item.serviceName.includes(key)) 
+                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${item.isCustom ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>
+                                                {item.isCustom ? <PenTool className="w-4 h-4" /> : 
+                                                 (Object.keys(serviceIcons).find(key => item.serviceName.includes(key)) 
                                                     ? serviceIcons[Object.keys(serviceIcons).find(key => item.serviceName.includes(key))!] 
-                                                    : serviceIcons['default']}
+                                                    : serviceIcons['default'])}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-slate-800 text-sm">{item.serviceName}</p>
+                                                <p className="font-medium text-slate-800 text-sm">{item.serviceName} {item.isCustom && <span className="text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-100">Manual</span>}</p>
                                                 <p className="text-xs text-slate-500">
                                                     {item.quantity} {item.unit === 'kg' ? 'kg' : 'pza'} x ${item.priceUnit}
                                                 </p>
@@ -548,10 +684,7 @@ export default function ServicesPage() {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="font-semibold text-slate-700 text-sm">${item.subtotal.toFixed(2)}</span>
-                                            <button 
-                                                onClick={() => handleRemoveFromCart(index)}
-                                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                            >
+                                            <button onClick={() => handleRemoveFromCart(index)} className="text-slate-400 hover:text-red-500 transition-colors">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -578,7 +711,7 @@ export default function ServicesPage() {
                 </CardContent>
             </Card>
 
-            {/* 3. LOGÍSTICA (POPOVER DATE) */}
+            {/* 3. LOGÍSTICA */}
             <Card className="border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -632,7 +765,7 @@ export default function ServicesPage() {
             </Card>
         </div>
 
-        {/* COLUMNA DERECHA: RESUMEN Y PAGO (Sticky) */}
+        {/* COLUMNA DERECHA: RESUMEN Y PAGO */}
         <div className="lg:col-span-4 space-y-6">
             <Card className="border-slate-200 shadow-md bg-white sticky top-4 overflow-hidden">
                 <div className="h-2 bg-gradient-to-r from-cyan-400 to-blue-500 w-full" />
@@ -640,7 +773,6 @@ export default function ServicesPage() {
                     <CardTitle className="text-slate-800">Resumen del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Lista resumen simplificada */}
                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                         {cart.length > 0 ? (
                             <div className="space-y-2 mb-4">
@@ -662,7 +794,6 @@ export default function ServicesPage() {
                         </div>
                     </div>
 
-                    {/* Método de Pago */}
                     <div className="space-y-3">
                         <Label className="text-slate-600">Método de Pago</Label>
                         <div className="grid grid-cols-2 gap-2">
@@ -695,7 +826,6 @@ export default function ServicesPage() {
                         size="lg" 
                         className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200 font-bold text-lg h-12 transition-all hover:scale-[1.02]"
                         onClick={() => {
-                            // Validaciones
                             if (!selectedClient) { toast({title: "Falta Cliente", description: "Selecciona un cliente.", variant: "destructive"}); return; }
                             if (cart.length === 0) { toast({title: "Carrito vacío", description: "Agrega al menos un servicio.", variant: "destructive"}); return; }
                             if (!deliveryDate || !deliveryTime) { toast({title: "Faltan Fechas", description: "Define fecha y hora de entrega.", variant: "destructive"}); return; }
@@ -709,7 +839,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* --- MODAL: REGISTRO CLIENTE RÁPIDO --- */}
+      {/* --- MODALES --- */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="rounded-2xl sm:max-w-md">
             <DialogHeader>
@@ -743,7 +873,6 @@ export default function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- MODAL: CONFIRMACIÓN FINAL --- */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="rounded-2xl sm:max-w-md">
             <DialogHeader>

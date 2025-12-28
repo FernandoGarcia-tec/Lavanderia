@@ -29,13 +29,15 @@ import {
 } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  
+  // Usamos 'identifier' porque puede ser email o teléfono
+  const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,13 +47,44 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     try {
-      // 1. Autenticación
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      let emailToUse = identifier.trim();
+
+      // 1. DETECCIÓN: ¿Es un teléfono? (Si no tiene '@' y tiene al menos 7 dígitos)
+      // Limpiamos espacios y guiones para la comprobación
+      const cleanIdentifier = emailToUse.replace(/[\s-]/g, '');
+      const isPhone = !emailToUse.includes('@') && /^\d+$/.test(cleanIdentifier) && cleanIdentifier.length >= 7;
+
+      if (isPhone) {
+        console.log(`Buscando correo para el teléfono: ${emailToUse}`);
+        
+        // Buscar en Firestore el usuario con este teléfono
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('phone', '==', emailToUse));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // Encontramos al usuario, obtenemos su correo
+          const userData = querySnapshot.docs[0].data();
+          if (userData.email) {
+            emailToUse = userData.email;
+            console.log(`Teléfono encontrado. Correo asociado: ${emailToUse}`);
+          } else {
+            throw new Error("Este número de teléfono no tiene un correo electrónico asociado para iniciar sesión.");
+          }
+        } else {
+          // Si no se encuentra, es posible que no esté registrado o el formato no coincida
+          throw new Error("No encontramos una cuenta con ese número de teléfono. Intenta con tu correo.");
+        }
+      }
+
+      // 2. Autenticación con Firebase
+      const cred = await signInWithEmailAndPassword(auth, emailToUse, password);
       const uid = cred.user.uid;
       const userEmail = cred.user.email;
       
-      // Chequeo de claims
+      // Chequeo de claims (cambio de contraseña forzado)
       try {
         const idTokenResult = await cred.user.getIdTokenResult();
         if (idTokenResult?.claims?.mustChangePassword) {
@@ -62,10 +95,8 @@ export default function LoginPage() {
       } catch (claimErr) { 
         console.warn('Failed to read token claims', claimErr);
       }
-
-      console.log('Login: Buscando datos para:', userEmail);
       
-      // 2. Buscar documento del usuario
+      // 3. Buscar documento del usuario y Rol
       let userDocSnapshot;
       let userData = null;
       let docRef = doc(firestore, 'users', uid);
@@ -78,10 +109,8 @@ export default function LoginPage() {
 
       if (userDocSnapshot.exists()) {
         userData = userDocSnapshot.data();
-        console.log("Usuario encontrado por ID (UID). Rol actual:", userData?.role);
       } else {
-        // Fallback: Buscar por correo
-        console.log("No encontrado por ID, buscando por correo...");
+        // Fallback: Buscar por correo si el ID no coincide (casos raros de migración)
         const usersRef = collection(firestore, 'users');
         const q = query(usersRef, where('email', '==', userEmail));
         const querySnapshot = await getDocs(q);
@@ -90,26 +119,26 @@ export default function LoginPage() {
           const foundDoc = querySnapshot.docs[0];
           userData = foundDoc.data();
           docRef = foundDoc.ref;
-          console.log("Usuario encontrado por Correo. Rol actual:", userData?.role);
         }
       }
 
-      // 3. Si NO existe documento, crear perfil de CLIENTE
+      // 4. Si NO existe documento, crear perfil de CLIENTE (Autoreparación)
       if (!userData) {
-        console.log("Documento no encontrado. Creando perfil de Cliente...");
         const newUser = {
             email: userEmail,
-            name: cred.user.displayName || email.split('@')[0],
-            role: 'client', // <--- CLIENTE POR DEFECTO
+            name: cred.user.displayName || userEmail?.split('@')[0],
+            role: 'client', // CLIENTE POR DEFECTO
             status: 'aprobado',
             createdAt: serverTimestamp(),
-            authUid: uid
+            authUid: uid,
+            // Si entró por teléfono y no existía el registro, guardamos el teléfono también
+            ...(isPhone ? { phone: identifier } : {}) 
         };
         await setDoc(doc(firestore, 'users', uid), newUser);
         userData = newUser;
       }
 
-      // 4. Validaciones de estado
+      // 5. Validaciones de estado
       if (userData && userData.status === 'pendiente') {
         await signOut(auth);
         setError('La cuenta está pendiente. Espera a que el administrador la autorice.');
@@ -117,18 +146,16 @@ export default function LoginPage() {
         return;
       }
 
-      // --- SIN AUTOCORRECCIÓN DE ROL ---
-
       const role = userData?.role;
 
       if (!role) {
-        // Solo si NO tiene rol, le ponemos 'client' para que no se rompa la app
+        // Si no tiene rol, asignamos cliente por seguridad
         await setDoc(docRef, { role: 'client' }, { merge: true });
         router.push('/client');
         return;
       }
 
-      // 5. Redirección
+      // 6. Redirección según Rol
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'personal') {
@@ -140,12 +167,18 @@ export default function LoginPage() {
         setError('Rol desconocido o no autorizado.');
         setLoading(false);
       }
+
     } catch (err: any) {
       console.error('Login error', err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Correo o contraseña incorrectos.');
+      // Mensajes de error amigables
+      if (err.message && err.message.includes("número de teléfono")) {
+         setError(err.message);
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Datos incorrectos. Verifica tu correo/teléfono y contraseña.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Demasiados intentos fallidos. Intenta más tarde.');
       } else {
-        setError(err.message || 'Error al iniciar sesión');
+        setError(err.message || 'Error al iniciar sesión. Inténtalo de nuevo.');
       }
     } finally {
       setLoading(false);
@@ -154,8 +187,9 @@ export default function LoginPage() {
 
   // UI / DISEÑO
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex items-center justify-center p-4">
-      {/* FONDO */}
+    <div className="min-h-screen bg-slate-50 relative font-sans flex items-center justify-center p-4 overflow-hidden">
+      
+      {/* FONDO (z-0 para que se vea) */}
       <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
         <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
         <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
@@ -163,7 +197,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
       </div>
 
-      {/* CONTENIDO */}
+      {/* CONTENIDO (z-10 para estar encima) */}
       <div className="relative z-10 w-full max-w-md animate-in zoom-in-95 duration-500">
         <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
           <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-4 ring-white/10">
@@ -171,7 +205,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Card className="w-full shadow-2xl border-0 rounded-3xl overflow-hidden">
+        <Card className="w-full shadow-2xl border-0 rounded-3xl overflow-hidden bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center bg-slate-50/50 pb-4">
             <CardTitle className="font-headline text-2xl text-cyan-900">Lavanderia y planchaduría "ANGY"</CardTitle>
             <CardDescription>
@@ -182,22 +216,22 @@ export default function LoginPage() {
           <CardContent className="pt-6">
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-600">Correo Electrónico</Label>
+                <Label htmlFor="identifier" className="text-slate-600">Correo o Teléfono</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
-                  placeholder="nombre@ejemplo.com"
+                  id="identifier"
+                  type="text" 
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="ejemplo@correo.com o 5512345678"
                   required
-                  className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl"
+                  className="h-12 border-slate-200 focus-visible:ring-cyan-500 rounded-xl text-base"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-slate-600">Contraseña</Label>
                   <Link
-                    href="#"
+                    href="/forgot-password" 
                     className="text-sm font-medium text-cyan-600 hover:underline hover:text-cyan-700"
                   >
                     ¿Olvidaste tu contraseña?
@@ -210,28 +244,36 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
                     required
-                    className="h-11 border-slate-200 focus-visible:ring-cyan-500 rounded-xl pr-10"
+                    className="h-12 border-slate-200 focus-visible:ring-cyan-500 rounded-xl pr-10 text-base"
                   />
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-transparent"
                     aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-5 w-5 text-slate-400" /> : <Eye className="h-5 w-5 text-slate-400" />}
                   </Button>
                 </div>
               </div>
               <Button 
                 type="submit" 
-                className="w-full h-11 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-md shadow-cyan-200 transition-all hover:scale-[1.02]"
+                className="w-full h-12 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-md shadow-cyan-200 transition-all hover:scale-[1.02] text-base font-semibold"
                 disabled={loading}
               >
-                {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+                {loading ? (
+                    <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Verificando...
+                    </div>
+                ) : 'Iniciar Sesión'}
               </Button>
-              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+              {error && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl text-center animate-in fade-in slide-in-from-top-1">
+                    <p className="text-sm text-red-600 font-medium">{error}</p>
+                  </div>
+              )}
             </form>
             
             <div className="mt-6 text-center text-sm text-muted-foreground">
@@ -265,6 +307,10 @@ export default function LoginPage() {
             </div>
           </CardFooter>
         </Card>
+        
+        <p className="text-center text-xs text-slate-400 mt-8">
+           © 2025 Angy Lavandería.
+        </p>
       </div>
     </div>
   );

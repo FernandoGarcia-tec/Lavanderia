@@ -59,7 +59,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { writeAudit } from '@/lib/audit';
 import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import { cn } from "@/lib/utils";
 
 export default function UsersPage() {
@@ -107,7 +107,8 @@ export default function UsersPage() {
   const filteredUsers = useMemo(() => {
       return usersList.filter(user => {
           const matchesSearch = (user.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
-                                (user.email?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+                                (user.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                                (user.phone?.includes(searchQuery));
           const matchesRole = roleFilter === 'all' || user.role === roleFilter;
           return matchesSearch && matchesRole;
       });
@@ -171,13 +172,14 @@ export default function UsersPage() {
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') || '').trim();
     const email = String(fd.get('email') || '').trim();
+    const phone = String(fd.get('phone') || '').trim(); // Nuevo campo
     const role = String(fd.get('role') || 'client');
     const status = String(fd.get('status') || 'aprobado');
 
     if (!name || !email) { toast({ title: 'Datos incompletos', description: 'Nombre y correo son requeridos.', variant: 'destructive' }); return; }
 
     try {
-      await updateDoc(doc(firestore, 'users', selectedUser.id), { name, email, role, status });
+      await updateDoc(doc(firestore, 'users', selectedUser.id), { name, email, phone, role, status });
       toast({ title: 'Usuario actualizado', description: 'Los cambios se han guardado correctamente.' });
       setIsEditOpen(false);
       
@@ -188,7 +190,7 @@ export default function UsersPage() {
         resource: 'users',
         resourceId: selectedUser.id,
         before: selectedUser,
-        after: { name, email, role, status },
+        after: { name, email, phone, role, status },
       });
     } catch (e: any) {
       toast({ title: 'Error', description: 'No se pudo actualizar el usuario.', variant: 'destructive' });
@@ -200,7 +202,8 @@ export default function UsersPage() {
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') || '').trim();
     const email = String(fd.get('email') || '').trim();
-    const role = newUserRole; // Usar estado local para el rol seleccionado en el botón
+    const phone = String(fd.get('phone') || '').trim(); // Nuevo campo
+    const role = newUserRole; 
     
     if (!name || !email) {
        toast({ title: 'Faltan datos', description: 'Nombre y correo son requeridos.', variant: 'destructive' });
@@ -211,11 +214,18 @@ export default function UsersPage() {
       const res = await fetch('/api/create-auth-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, role, defaultPassword: defaultPass }),
+        body: JSON.stringify({ name, email, phone, role, defaultPassword: defaultPass }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Error creating auth user');
       
+      // --- FIX CRÍTICO ---
+      // Forzar el guardado del teléfono directamente en Firestore por si la API falla en esto
+      if (phone && j.docId) {
+          await setDoc(doc(firestore, 'users', j.docId), { phone }, { merge: true });
+      }
+      // --------------------
+
       toast({ title: 'Usuario creado', description: `Se ha creado la cuenta para ${name}.` });
       setIsCreateOpen(false);
       
@@ -225,7 +235,7 @@ export default function UsersPage() {
         action: 'create_auth_user',
         resource: 'users',
         resourceId: j.docId ?? null,
-        after: { name, email, role, status: 'aprobado', authUid: j.uid },
+        after: { name, email, phone, role, status: 'aprobado', authUid: j.uid },
       });
       
       if (j.resetLink) {
@@ -325,7 +335,7 @@ export default function UsersPage() {
                     <div className="relative w-full sm:w-64 group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
                         <Input 
-                            placeholder="Buscar por nombre o correo..." 
+                            placeholder="Buscar por nombre, correo o tel..." 
                             className="pl-9 h-10 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-all focus-visible:ring-cyan-500"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -372,6 +382,7 @@ export default function UsersPage() {
                               <div>
                                  <p className="font-semibold text-slate-800 text-sm">{user.name || 'Sin nombre'}</p>
                                  <p className="text-xs text-slate-500">{user.email}</p>
+                                 {user.phone && <p className="text-xs text-slate-400 font-mono mt-0.5">{user.phone}</p>}
                               </div>
                            </div>
                         </TableCell>
@@ -452,6 +463,11 @@ export default function UsersPage() {
                         <Label>Correo Electrónico</Label>
                         <Input name="email" type="email" placeholder="usuario@email.com" className="rounded-xl" required />
                     </div>
+                    {/* Campo Teléfono Agregado */}
+                    <div className="space-y-2">
+                        <Label>Teléfono (Opcional)</Label>
+                        <Input name="phone" type="tel" placeholder="55 1234 5678" className="rounded-xl" />
+                    </div>
                     <div className="space-y-2">
                         <Label>Contraseña Temporal</Label>
                         <Input value={defaultPass} onChange={e => setDefaultPass(e.target.value)} className="rounded-xl" />
@@ -480,6 +496,11 @@ export default function UsersPage() {
                         <div className="space-y-2">
                             <Label>Correo</Label>
                             <Input name="email" defaultValue={selectedUser.email} className="rounded-xl" />
+                        </div>
+                        {/* Campo Teléfono en Edición */}
+                        <div className="space-y-2">
+                            <Label>Teléfono</Label>
+                            <Input name="phone" defaultValue={selectedUser.phone} className="rounded-xl" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
