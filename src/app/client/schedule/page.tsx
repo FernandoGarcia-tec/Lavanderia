@@ -20,12 +20,10 @@ import {
   Sparkles,
   Trash2,
   ShoppingBag,
-  Search,
-  X,
   Info,
   Plus,
-  Phone, // Nuevo icono para el teléfono
-  LocateFixed
+  Phone,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,18 +44,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-
-// --- MOCK DE DIRECCIONES PARA AUTOCOMPLETADO (Simulación de Google Places) ---
-const MOCK_ADDRESSES = [
-  "Av. Tecnológico 123, Colima, Col.",
-  "Calle Madero 45, Centro, Colima",
-  "Blvd. Camino Real 88, Villa de Álvarez",
-  "Av. Felipe Sevilla del Río 555, Lomas de Circunvalación",
-  "Calle 5 de Mayo 10, El Diezmo, Colima",
-  "Av. San Fernando 200, zona Centro",
-  "Calle V. Carranza 30, Centro, Colima",
-  "Av. Constitución 1500, Lomas Verdes"
-];
 
 // --- ICONOS Y REDES SOCIALES ---
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -126,7 +112,6 @@ interface CartItem {
   serviceId: string;
   serviceName: string;
   unit: string;
-  // Ya no guardamos cantidad ni precio
 }
 
 export default function SchedulePage() {
@@ -143,17 +128,11 @@ export default function SchedulePage() {
   // Carrito de compras (solo ítems seleccionados)
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Estados para búsqueda de dirección
-  const [addressQuery, setAddressQuery] = useState('');
-  const [filteredAddresses, setFilteredAddresses] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
   // Datos del formulario final
   const [formData, setFormData] = useState({
     date: '',
     time: '',
-    address: '',
-    phone: '', // Campo de teléfono agregado
+    phone: '',
     notes: ''
   });
 
@@ -205,51 +184,6 @@ export default function SchedulePage() {
       setCart(newCart);
   };
 
-  // Lógica de Autocompletado de Dirección (Simulando Google Places)
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setAddressQuery(val);
-    setFormData({ ...formData, address: val });
-    
-    if (val.length > 2) {
-        const filtered = MOCK_ADDRESSES.filter(addr => 
-            addr.toLowerCase().includes(val.toLowerCase())
-        );
-        setFilteredAddresses(filtered);
-        setShowSuggestions(true);
-    } else {
-        setShowSuggestions(false);
-    }
-  };
-
-  const selectAddress = (addr: string) => {
-      setAddressQuery(addr);
-      setFormData({ ...formData, address: addr });
-      setShowSuggestions(false);
-  };
-
-  // Obtener ubicación actual
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-        toast({ title: "Error", description: "Tu navegador no soporta geolocalización.", variant: "destructive" });
-        return;
-    }
-    toast({ title: "Obteniendo ubicación...", description: "Por favor permite el acceso si se solicita." });
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            const { latitude, longitude } = position.coords;
-            const coordsStr = `Ubicación GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-            setFormData({ ...formData, address: coordsStr });
-            setAddressQuery(coordsStr);
-            toast({ title: "Ubicación detectada", description: "Coordenadas agregadas a la dirección." });
-        },
-        (error) => {
-            console.error(error);
-            toast({ title: "Error", description: "No se pudo obtener la ubicación.", variant: "destructive" });
-        }
-    );
-  };
-
   const handleSubmit = async () => {
     if (!auth?.currentUser) {
       toast({ title: "Error", description: "Debes iniciar sesión para agendar.", variant: "destructive" });
@@ -257,10 +191,6 @@ export default function SchedulePage() {
     }
     if (cart.length === 0) {
         toast({ title: "Lista vacía", description: "Selecciona al menos un servicio.", variant: "destructive" });
-        return;
-    }
-    if (!formData.address) {
-        toast({ title: "Falta dirección", description: "Por favor ingresa una dirección de recolección.", variant: "destructive" });
         return;
     }
     if (!formData.phone) {
@@ -284,9 +214,9 @@ export default function SchedulePage() {
         
         date: formData.date,
         time: formData.time,
-        address: formData.address,
-        phone: formData.phone, // Guardamos el teléfono
+        phone: formData.phone,
         notes: formData.notes,
+        // Eliminado address
         
         deliveryDate: serverTimestamp(),
         status: 'pendiente',
@@ -311,7 +241,7 @@ export default function SchedulePage() {
       {/* --- HEADER --- */}
       <header className="sticky top-0 z-50 w-full bg-white/80 shadow-sm backdrop-blur-sm border-b border-white/20">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="/" className="font-headline text-lg font-bold text-gray-800 flex items-center gap-2">
+          <Link href="/client" className="font-headline text-lg font-bold text-gray-800 flex items-center gap-2">
             <div className="bg-cyan-600 rounded-lg p-1.5"><Droplets className="h-5 w-5 text-white" /></div>
             <span className="hidden sm:inline">Lavandería Angy</span>
           </Link>
@@ -360,7 +290,7 @@ export default function SchedulePage() {
               Agendar Servicio
             </h1>
             <p className="text-sm text-cyan-50 md:text-lg max-w-lg mx-auto leading-relaxed">
-              Selecciona tus prendas y programa de agenda en simples pasos.
+              Selecciona tus prendas y programa de agendado en simples pasos.
             </p>
             
             {/* WIZARD INDICATOR */}
@@ -389,7 +319,7 @@ export default function SchedulePage() {
         <section className="container mx-auto px-4 -mt-16 relative z-20">
             <div className="max-w-4xl mx-auto">
             
-            {/* PASO 1: SELECCIÓN DE SERVICIOS */}
+            {/* PASO 1: SELECCIÓN DE SERVICIOS (CARRITO SIMPLIFICADO) */}
             {step === 1 && (
                 <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
                     <Card className="shadow-xl border-0 rounded-2xl overflow-hidden">
@@ -466,7 +396,7 @@ export default function SchedulePage() {
                                 </div>
                                 <div className="flex items-center gap-2 bg-blue-50 text-blue-700 p-3 rounded-xl text-xs">
                                     <Info className="w-4 h-4 shrink-0" />
-                                    <span>El costo total se calculará al momento de pesar/contar tus prendas en la recolección.</span>
+                                    <span>El costo total se calculará al momento de pesar/contar tus prendas en la entrega.</span>
                                 </div>
                             </div>
                         )}
@@ -489,8 +419,8 @@ export default function SchedulePage() {
                     <CardHeader className="border-b border-gray-100 pb-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="text-xl text-gray-800">Detalles de agenda</CardTitle>
-                                <CardDescription>Indícanos cuándo pasaría a dejar su ropa.</CardDescription>
+                                <CardTitle className="text-xl text-gray-800">Detalles de agendado</CardTitle>
+                                <CardDescription>Indícanos cuándo pasaría a dejar.</CardDescription>
                             </div>
                             <div className="bg-slate-100 p-2 rounded-lg">
                                 <MapPin className="h-5 w-5 text-slate-500" />
@@ -498,50 +428,6 @@ export default function SchedulePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-8 space-y-6">
-                        
-                        <div className="space-y-2 relative z-50">
-                            <Label className="text-gray-600 font-medium">Dirección de Recolección</Label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                                <Input 
-                                    placeholder="Buscar calle, colonia, número..." 
-                                    className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
-                                    value={addressQuery}
-                                    onChange={handleAddressChange}
-                                    onFocus={() => addressQuery.length > 0 && setShowSuggestions(true)}
-                                />
-                                {formData.address && (
-                                    <button 
-                                        onClick={() => {setAddressQuery(''); setFormData({...formData, address: ''}); }}
-                                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                )}
-                            </div>
-                            
-                            {/* Autocompletado Simulado Estilo Google */}
-                            {showSuggestions && filteredAddresses.length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto animate-in fade-in slide-in-from-top-1">
-                                    {filteredAddresses.map((addr, idx) => (
-                                        <button
-                                            key={idx}
-                                            className="w-full text-left px-4 py-3.5 hover:bg-slate-50 text-sm text-slate-700 flex items-center gap-3 border-b border-slate-50 last:border-0 transition-colors"
-                                            onClick={() => selectAddress(addr)}
-                                        >
-                                            <div className="bg-slate-100 p-1.5 rounded-full text-slate-500">
-                                                <MapPin className="h-4 w-4" />
-                                            </div>
-                                            <span className="truncate">{addr}</span>
-                                        </button>
-                                    ))}
-                                    <div className="bg-slate-50 p-2 text-xs text-center text-slate-400 border-t border-slate-100">
-                                        Resultados simulados por Google Maps
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-gray-600 font-medium">Fecha</Label>
@@ -556,7 +442,7 @@ export default function SchedulePage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-gray-600 font-medium">Hora Preferida</Label>
+                                <Label className="text-gray-600 font-medium">Hora</Label>
                                 <div className="relative">
                                     <Clock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                     <Input 
@@ -568,7 +454,7 @@ export default function SchedulePage() {
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div className="space-y-2">
                             <Label className="text-gray-600 font-medium">Teléfono de Contacto</Label>
                             <div className="relative">
@@ -599,7 +485,7 @@ export default function SchedulePage() {
                         </Button>
                         <Button 
                             onClick={handleSubmit} 
-                            disabled={loading || !formData.date || !formData.address || !formData.phone}
+                            disabled={loading || !formData.date || !formData.phone}
                             className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200 px-8 h-11 transition-all hover:scale-[1.02]"
                         >
                             {loading ? 'Enviando...' : 'Confirmar Solicitud'} <ArrowRight className="ml-2 h-4 w-4" />
@@ -617,7 +503,7 @@ export default function SchedulePage() {
                         </div>
                         <h2 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">¡Solicitud Recibida!</h2>
                         <p className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
-                            Hemos agendado tu recolección. Un repartidor pasará por tu domicilio el <strong className="text-cyan-700">{formData.date}</strong> a las <strong className="text-cyan-700">{formData.time}</strong>.
+                            Hemos agendado tu servicio. Puedes pasar a entregar el dia: <strong className="text-cyan-700">{formData.date}</strong> a las <strong className="text-cyan-700">{formData.time}</strong>.
                         </p>
                         <div className="flex gap-4">
                             <Button variant="outline" onClick={() => router.push('/')} className="h-12 px-8 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
@@ -626,8 +512,7 @@ export default function SchedulePage() {
                             <Button className="bg-cyan-600 hover:bg-cyan-700 text-white h-12 px-8 rounded-xl shadow-lg shadow-cyan-200" onClick={() => {
                                 setStep(1);
                                 setCart([]);
-                                setFormData({ date: '', time: '', address: '', notes: '', phone: '' });
-                                setAddressQuery('');
+                                setFormData({ date: '', time: '', phone: '', notes: '' });
                             }}>
                                 Solicitar Otro
                             </Button>
@@ -640,28 +525,39 @@ export default function SchedulePage() {
       </main>
 
       {/* --- FOOTER --- */}
-      <footer className="bg-gray-100 py-8 border-t border-slate-200 mt-auto">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 md:flex-row md:px-6">
-          <p className="text-sm text-gray-500 font-medium">
-            © 2025 Lavandería Angy.
+       <footer className="bg-gray-100 py-6">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
+          <p className="text-sm text-gray-500">
+            © 2025 Desarrollado por José Fernando Garcia Quintero
           </p>
           <div className="flex items-center gap-6">
-             <div className="flex gap-3">
-              <Link href="#" className="text-gray-400 hover:text-blue-600 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
+             <div className="flex gap-4">
+              <Link href="#" className="text-gray-500 hover:text-primary">
                 <FacebookIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-400 hover:text-sky-500 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
+              <Link href="#" className="text-gray-500 hover:text-primary">
                 <TwitterIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-400 hover:text-pink-600 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
+              <Link href="#" className="text-gray-500 hover:text-primary">
                 <InstagramIcon className="h-5 w-5" />
               </Link>
             </div>
+             <div className="flex gap-4 text-sm">
+                 <Link href="#" className="text-gray-500 hover:text-primary">
+                    Blog
+                </Link>
+                <Link href="#" className="text-gray-500 hover:text-primary">
+                    Support
+                </Link>
+                <Link href="#" className="text-gray-500 hover:text-primary">
+                    Developers
+                </Link>
+             </div>
           </div>
         </div>
       </footer>
 
-      {/* BOTÓN FLOTANTE DE AYUDA */}
+      {/* BOTÓN FLOTANTE DE AYUDA 
       <a 
         href="tel:3121234567"
         className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-xl shadow-green-200/50 transition-all hover:scale-105 flex items-center gap-2 group"
@@ -670,7 +566,7 @@ export default function SchedulePage() {
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-in-out whitespace-nowrap font-medium px-0 group-hover:px-2">
           ¿Ayuda? 312 123 4567
         </span>
-      </a>
+      </a>*/}
 
     </div>
   );
