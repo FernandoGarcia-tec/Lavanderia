@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useFirestore } from '@/firebase/provider';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { 
   doc, 
   getDoc, 
@@ -29,20 +29,35 @@ import {
 } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   
-  // Usamos 'identifier' porque puede ser email o teléfono
   const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Estados para el Modal de Recuperación
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
+  // Función de Login
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -51,40 +66,33 @@ export default function LoginPage() {
     try {
       let emailToUse = identifier.trim();
 
-      // 1. DETECCIÓN: ¿Es un teléfono? (Si no tiene '@' y tiene al menos 7 dígitos)
-      // Limpiamos espacios y guiones para la comprobación
+      // 1. DETECCIÓN: ¿Es un teléfono?
       const cleanIdentifier = emailToUse.replace(/[\s-]/g, '');
       const isPhone = !emailToUse.includes('@') && /^\d+$/.test(cleanIdentifier) && cleanIdentifier.length >= 7;
 
       if (isPhone) {
         console.log(`Buscando correo para el teléfono: ${emailToUse}`);
-        
-        // Buscar en Firestore el usuario con este teléfono
         const usersRef = collection(firestore, 'users');
         const q = query(usersRef, where('phone', '==', emailToUse));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          // Encontramos al usuario, obtenemos su correo
           const userData = querySnapshot.docs[0].data();
           if (userData.email) {
             emailToUse = userData.email;
-            console.log(`Teléfono encontrado. Correo asociado: ${emailToUse}`);
           } else {
             throw new Error("Este número de teléfono no tiene un correo electrónico asociado para iniciar sesión.");
           }
         } else {
-          // Si no se encuentra, es posible que no esté registrado o el formato no coincida
           throw new Error("No encontramos una cuenta con ese número de teléfono. Intenta con tu correo.");
         }
       }
 
-      // 2. Autenticación con Firebase
+      // 2. Autenticación
       const cred = await signInWithEmailAndPassword(auth, emailToUse, password);
       const uid = cred.user.uid;
       const userEmail = cred.user.email;
       
-      // Chequeo de claims (cambio de contraseña forzado)
       try {
         const idTokenResult = await cred.user.getIdTokenResult();
         if (idTokenResult?.claims?.mustChangePassword) {
@@ -96,7 +104,7 @@ export default function LoginPage() {
         console.warn('Failed to read token claims', claimErr);
       }
       
-      // 3. Buscar documento del usuario y Rol
+      // 3. Buscar documento y Rol
       let userDocSnapshot;
       let userData = null;
       let docRef = doc(firestore, 'users', uid);
@@ -110,7 +118,6 @@ export default function LoginPage() {
       if (userDocSnapshot.exists()) {
         userData = userDocSnapshot.data();
       } else {
-        // Fallback: Buscar por correo si el ID no coincide (casos raros de migración)
         const usersRef = collection(firestore, 'users');
         const q = query(usersRef, where('email', '==', userEmail));
         const querySnapshot = await getDocs(q);
@@ -122,23 +129,22 @@ export default function LoginPage() {
         }
       }
 
-      // 4. Si NO existe documento, crear perfil de CLIENTE (Autoreparación)
+      // 4. Autoreparación / Creación
       if (!userData) {
         const newUser = {
             email: userEmail,
             name: cred.user.displayName || userEmail?.split('@')[0],
-            role: 'client', // CLIENTE POR DEFECTO
+            role: 'client',
             status: 'aprobado',
             createdAt: serverTimestamp(),
             authUid: uid,
-            // Si entró por teléfono y no existía el registro, guardamos el teléfono también
             ...(isPhone ? { phone: identifier } : {}) 
         };
         await setDoc(doc(firestore, 'users', uid), newUser);
         userData = newUser;
       }
 
-      // 5. Validaciones de estado
+      // 5. Validaciones
       if (userData && userData.status === 'pendiente') {
         await signOut(auth);
         setError('La cuenta está pendiente. Espera a que el administrador la autorice.');
@@ -149,13 +155,12 @@ export default function LoginPage() {
       const role = userData?.role;
 
       if (!role) {
-        // Si no tiene rol, asignamos cliente por seguridad
         await setDoc(docRef, { role: 'client' }, { merge: true });
         router.push('/client');
         return;
       }
 
-      // 6. Redirección según Rol
+      // 6. Redirección
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'personal') {
@@ -170,7 +175,6 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error('Login error', err);
-      // Mensajes de error amigables
       if (err.message && err.message.includes("número de teléfono")) {
          setError(err.message);
       } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -185,11 +189,34 @@ export default function LoginPage() {
     }
   }
 
-  // UI / DISEÑO
+  // Función de Recuperación de Contraseña
+  async function handlePasswordReset() {
+    if (!resetEmail) {
+        toast({ title: 'Campo vacío', description: 'Por favor ingresa tu correo electrónico.', variant: 'destructive' });
+        return;
+    }
+    setResetLoading(true);
+    try {
+        await sendPasswordResetEmail(auth, resetEmail);
+        toast({ title: 'Correo enviado', description: `Se ha enviado un enlace a ${resetEmail}` });
+        setIsResetOpen(false);
+        setResetEmail('');
+    } catch (error: any) {
+        console.error(error);
+        if (error.code === 'auth/user-not-found') {
+            toast({ title: 'Error', description: 'No existe una cuenta con este correo.', variant: 'destructive' });
+        } else {
+            toast({ title: 'Error', description: 'No se pudo enviar el correo.', variant: 'destructive' });
+        }
+    } finally {
+        setResetLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 relative font-sans flex items-center justify-center p-4 overflow-hidden">
       
-      {/* FONDO (z-0 para que se vea) */}
+      {/* FONDO */}
       <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 rounded-b-[50px] shadow-lg overflow-hidden z-0">
         <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
         <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
@@ -197,7 +224,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
       </div>
 
-      {/* CONTENIDO (z-10 para estar encima) */}
+      {/* CONTENIDO */}
       <div className="relative z-10 w-full max-w-md animate-in zoom-in-95 duration-500">
         <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
           <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner ring-4 ring-white/10">
@@ -230,12 +257,17 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-slate-600">Contraseña</Label>
-                  <Link
-                    href="/forgot-password" 
+                  <button
+                    type="button"
+                    onClick={() => {
+                        // Pre-llenar el email si el usuario ya escribió algo que parece un correo
+                        if (identifier.includes('@')) setResetEmail(identifier);
+                        setIsResetOpen(true);
+                    }}
                     className="text-sm font-medium text-cyan-600 hover:underline hover:text-cyan-700"
                   >
                     ¿Olvidaste tu contraseña?
-                  </Link>
+                  </button>
                 </div>
                 <div className="relative">
                   <Input
@@ -307,11 +339,44 @@ export default function LoginPage() {
             </div>
           </CardFooter>
         </Card>
-        
-        <p className="text-center text-xs text-slate-400 mt-8">
-           © 2025 Angy Lavandería.
-        </p>
       </div>
+
+      {/* --- MODAL RECUPERAR CONTRASEÑA --- */}
+      <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+            <DialogHeader>
+                <div className="mx-auto w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mb-2 text-cyan-600">
+                    <KeyRound className="h-6 w-6" />
+                </div>
+                <DialogTitle className="text-center text-xl text-slate-800">Recuperar Contraseña</DialogTitle>
+                <DialogDescription className="text-center">
+                    Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu acceso.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Label htmlFor="resetEmail" className="text-slate-600 mb-2 block">Correo Electrónico</Label>
+                <Input 
+                    id="resetEmail" 
+                    type="email" 
+                    placeholder="ejemplo@correo.com" 
+                    className="h-12 rounded-xl"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                />
+            </div>
+            <DialogFooter className="sm:justify-center gap-2">
+                <Button variant="ghost" onClick={() => setIsResetOpen(false)} className="rounded-xl px-6">Cancelar</Button>
+                <Button 
+                    onClick={handlePasswordReset} 
+                    disabled={resetLoading} 
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl px-8 shadow-md shadow-cyan-200"
+                >
+                    {resetLoading ? 'Enviando...' : 'Enviar Enlace'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

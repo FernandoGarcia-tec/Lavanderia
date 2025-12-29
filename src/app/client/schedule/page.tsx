@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import { 
@@ -17,7 +17,15 @@ import {
   User,
   Shirt,
   Wind,
-  Sparkles
+  Sparkles,
+  Trash2,
+  ShoppingBag,
+  Search,
+  X,
+  Info,
+  Plus,
+  Phone, // Nuevo icono para el teléfono
+  LocateFixed
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +44,22 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
-// --- ICONOS PERSONALIZADOS DEL FOOTER (De tu referencia) ---
+// --- MOCK DE DIRECCIONES PARA AUTOCOMPLETADO (Simulación de Google Places) ---
+const MOCK_ADDRESSES = [
+  "Av. Tecnológico 123, Colima, Col.",
+  "Calle Madero 45, Centro, Colima",
+  "Blvd. Camino Real 88, Villa de Álvarez",
+  "Av. Felipe Sevilla del Río 555, Lomas de Circunvalación",
+  "Calle 5 de Mayo 10, El Diezmo, Colima",
+  "Av. San Fernando 200, zona Centro",
+  "Calle V. Carranza 30, Centro, Colima",
+  "Av. Constitución 1500, Lomas Verdes"
+];
+
+// --- ICONOS Y REDES SOCIALES ---
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
 );
@@ -48,7 +70,6 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
 );
 
-// --- BURBUJAS ANIMADAS (De tu referencia) ---
 const AnimatedBubbles = () => (
     <div className="bubbles absolute inset-0 pointer-events-none overflow-hidden">
       {Array.from({ length: 15 }).map((_, i) => {
@@ -83,28 +104,30 @@ const AnimatedBubbles = () => (
     </div>
 );
 
-// --- MAPEOS DE SERVICIOS ---
 const serviceIconByName: Record<string, JSX.Element> = {
-  'Lavandería': <Droplets className="w-12 h-12" />,
-  'Lavado': <Droplets className="w-12 h-12" />,
-  'Lavado Premium': <Shirt className="w-12 h-12" />,
-  'Planchaduría': <Shirt className="w-12 h-12" />,
-  'Planchado': <Shirt className="w-12 h-12" />,
-  'Tintorería': <Sparkles className="w-12 h-12" />,
-  'Edredones': <Droplets className="w-12 h-12" />,
-  'Planchado Fino': <Brush className="w-12 h-12" />,
+  'Lavandería': <Droplets className="w-8 h-8" />,
+  'Lavado': <Droplets className="w-8 h-8" />,
+  'Planchaduría': <Wind className="w-8 h-8" />,
+  'Tintorería': <Sparkles className="w-8 h-8" />,
+  'Edredones': <Package2 className="w-8 h-8" />,
+  'default': <Shirt className="w-8 h-8" />
 };
 
 const serviceColorByName: Record<string, string> = {
-  'Lavandería': 'text-blue-400',
-  'Lavado': 'text-blue-400',
-  'Lavado Premium': 'text-indigo-400',
-  'Planchaduría': 'text-orange-400',
-  'Planchado': 'text-orange-400',
-  'Tintorería': 'text-purple-400',
-  'Edredones': 'text-teal-400',
-  'Planchado Fino': 'text-pink-400',
+  'Lavandería': 'text-blue-500 bg-blue-50',
+  'Lavado': 'text-blue-500 bg-blue-50',
+  'Planchaduría': 'text-orange-500 bg-orange-50',
+  'Tintorería': 'text-purple-500 bg-purple-50',
+  'Edredones': 'text-teal-500 bg-teal-50',
+  'default': 'text-slate-500 bg-slate-50'
 };
+
+interface CartItem {
+  serviceId: string;
+  serviceName: string;
+  unit: string;
+  // Ya no guardamos cantidad ni precio
+}
 
 export default function SchedulePage() {
   const [step, setStep] = useState(1);
@@ -113,29 +136,33 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+  
   const [services, setServices] = useState<Array<{ id: string; name: string; desc?: string; price?: number; unit?: string }>>([]);
   const [servicesLoading, setServicesLoading] = useState<boolean>(true);
 
-  // Estado del formulario
+  // Carrito de compras (solo ítems seleccionados)
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Estados para búsqueda de dirección
+  const [addressQuery, setAddressQuery] = useState('');
+  const [filteredAddresses, setFilteredAddresses] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Datos del formulario final
   const [formData, setFormData] = useState({
-    serviceType: '',
-    serviceName: '',
     date: '',
     time: '',
     address: '',
+    phone: '', // Campo de teléfono agregado
     notes: ''
   });
-
-  const handleServiceSelect = (id: string, name: string) => {
-    setFormData({ ...formData, serviceType: id, serviceName: name });
-    setStep(2);
-  };
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push('/');
   };
 
+  // Cargar servicios
   useEffect(() => {
     const colRef = collection(firestore, 'services');
     const unsub = onSnapshot(colRef, (snap) => {
@@ -155,23 +182,119 @@ export default function SchedulePage() {
     return () => unsub();
   }, [firestore]);
 
+  // Manejo del Carrito Simplificado
+  const addToCart = (service: any) => {
+      const exists = cart.find(item => item.serviceId === service.id);
+      if (exists) {
+        toast({ title: "Ya seleccionado", description: `El servicio ${service.name} ya está en tu lista.` });
+        return;
+      }
+
+      const newItem: CartItem = {
+          serviceId: service.id,
+          serviceName: service.name,
+          unit: service.unit
+      };
+      setCart([...cart, newItem]);
+      toast({ title: "Agregado", description: `${service.name} añadido a la lista.` });
+  };
+
+  const removeFromCart = (index: number) => {
+      const newCart = [...cart];
+      newCart.splice(index, 1);
+      setCart(newCart);
+  };
+
+  // Lógica de Autocompletado de Dirección (Simulando Google Places)
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setAddressQuery(val);
+    setFormData({ ...formData, address: val });
+    
+    if (val.length > 2) {
+        const filtered = MOCK_ADDRESSES.filter(addr => 
+            addr.toLowerCase().includes(val.toLowerCase())
+        );
+        setFilteredAddresses(filtered);
+        setShowSuggestions(true);
+    } else {
+        setShowSuggestions(false);
+    }
+  };
+
+  const selectAddress = (addr: string) => {
+      setAddressQuery(addr);
+      setFormData({ ...formData, address: addr });
+      setShowSuggestions(false);
+  };
+
+  // Obtener ubicación actual
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+        toast({ title: "Error", description: "Tu navegador no soporta geolocalización.", variant: "destructive" });
+        return;
+    }
+    toast({ title: "Obteniendo ubicación...", description: "Por favor permite el acceso si se solicita." });
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            const coordsStr = `Ubicación GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+            setFormData({ ...formData, address: coordsStr });
+            setAddressQuery(coordsStr);
+            toast({ title: "Ubicación detectada", description: "Coordenadas agregadas a la dirección." });
+        },
+        (error) => {
+            console.error(error);
+            toast({ title: "Error", description: "No se pudo obtener la ubicación.", variant: "destructive" });
+        }
+    );
+  };
+
   const handleSubmit = async () => {
     if (!auth?.currentUser) {
       toast({ title: "Error", description: "Debes iniciar sesión para agendar.", variant: "destructive" });
       return;
     }
+    if (cart.length === 0) {
+        toast({ title: "Lista vacía", description: "Selecciona al menos un servicio.", variant: "destructive" });
+        return;
+    }
+    if (!formData.address) {
+        toast({ title: "Falta dirección", description: "Por favor ingresa una dirección de recolección.", variant: "destructive" });
+        return;
+    }
+    if (!formData.phone) {
+        toast({ title: "Falta teléfono", description: "Por favor ingresa un número de contacto para cualquier duda.", variant: "destructive" });
+        return;
+    }
+
     setLoading(true);
     try {
+      const deliveryDateTime = new Date(formData.date);
+      const [h, m] = formData.time.split(':');
+      if (h) deliveryDateTime.setHours(Number(h), Number(m) || 0);
+
       await addDoc(collection(firestore, 'orders'), {
         userId: auth.currentUser.uid,
         userEmail: auth.currentUser.email,
         userName: auth.currentUser.displayName || 'Cliente',
-        ...formData,
+        items: cart, 
+        serviceName: cart.length === 1 ? cart[0].serviceName : 'Varios Servicios',
+        estimatedTotal: 0, // Se calcula después por el personal
+        
+        date: formData.date,
+        time: formData.time,
+        address: formData.address,
+        phone: formData.phone, // Guardamos el teléfono
+        notes: formData.notes,
+        
+        deliveryDate: serverTimestamp(),
         status: 'pendiente',
+        paymentStatus: 'pendiente', 
         createdAt: serverTimestamp(),
       });
       setStep(3);
-      toast({ title: "¡Pedido Agendado!", description: "Recibimos tu solicitud correctamente." });
+      toast({ title: "¡Solicitud Enviada!", description: "El personal confirmará los detalles." });
     } catch (error) {
       console.error(error);
       toast({ title: "Error", description: "No se pudo agendar el servicio.", variant: "destructive" });
@@ -180,32 +303,34 @@ export default function SchedulePage() {
     }
   };
 
+  const userInitial = (auth?.currentUser?.email || "U").charAt(0).toUpperCase();
+
   return (
     <div className="flex min-h-screen flex-col bg-white font-body font-sans">
       
-      {/* --- HEADER (Estilo de Referencia) --- */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 shadow-sm backdrop-blur-sm">
+      {/* --- HEADER --- */}
+      <header className="sticky top-0 z-50 w-full bg-white/80 shadow-sm backdrop-blur-sm border-b border-white/20">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="/" className="font-headline text-lg font-bold text-gray-800">
-            Lavandería y Planchaduría Angy
+          <Link href="/" className="font-headline text-lg font-bold text-gray-800 flex items-center gap-2">
+            <div className="bg-cyan-600 rounded-lg p-1.5"><Droplets className="h-5 w-5 text-white" /></div>
+            <span className="hidden sm:inline">Lavandería Angy</span>
           </Link>
-          <nav className="hidden items-center gap-6 md:flex">
-            <Link href="/client/schedule" className="text-sm font-medium text-primary transition-colors hover:text-cyan-600">
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/client/schedule" className="text-sm font-medium text-cyan-700 bg-cyan-50 px-3 py-1.5 rounded-full transition-colors">
               Programar servicio
-            </Link>
-            <Link href="#" className="text-sm font-medium text-gray-600 transition-colors hover:text-cyan-600">
-              Historial de pedidos
             </Link>
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5 text-gray-600" />
-              <span className="sr-only">Notificaciones</span>
             </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors">
-                  <User className="h-5 w-5 text-gray-600" />
-                  <span className="text-sm text-gray-600">{auth?.currentUser?.email || 'Usuario'}</span>
+                <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded-full border border-slate-200 transition-colors pr-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={auth?.currentUser?.photoURL || undefined} />
+                    <AvatarFallback className="bg-cyan-100 text-cyan-700 text-xs font-bold">{userInitial}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-gray-700 truncate max-w-[100px]">{auth?.currentUser?.email?.split('@')[0]}</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -218,155 +343,266 @@ export default function SchedulePage() {
             </DropdownMenu>
           </nav>
           
-          {/* Mobile Menu Trigger (Visual only for consistency with ref) */}
           <Button variant="ghost" size="icon" className="md:hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+            <User className="h-6 w-6 text-slate-700" />
           </Button>
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* --- HERO SECTION (Estilo de Referencia con Wizard Title) --- */}
-        <section className="relative flex h-[50vh] flex-col items-center justify-center bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 text-center overflow-hidden rounded-b-[50px] shadow-lg">
+      <main className="flex-1 pb-20">
+        {/* HERO SECTION */}
+        <section className="relative flex h-[40vh] flex-col items-center justify-center bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 text-center overflow-hidden rounded-b-[40px] shadow-lg mb-8">
           <AnimatedBubbles />
-          {/* Decoración */}
-          <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse" />
-          <div className="absolute top-20 right-20 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl" />
-          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
           
-          <div className="relative z-10 space-y-4 px-4">
-            <h1 className="font-headline text-4xl font-bold text-white md:text-5xl drop-shadow">
-              Agendar Nuevo Servicio
+          <div className="relative z-10 space-y-2 px-4">
+            <h1 className="font-headline text-3xl font-bold text-white md:text-5xl drop-shadow-md">
+              Agendar Servicio
             </h1>
-            <p className="text-lg text-white/90 md:text-xl">
-              Sigue los pasos para programar tu recolección
+            <p className="text-sm text-cyan-50 md:text-lg max-w-lg mx-auto leading-relaxed">
+              Selecciona tus prendas y programa de agenda en simples pasos.
             </p>
             
-            {/* INDICADOR DE PASOS DENTRO DEL HERO */}
-            <div className="flex justify-center items-center gap-6 mt-8">
+            {/* WIZARD INDICATOR */}
+            <div className="flex justify-center items-center gap-8 mt-6">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center">
+                    <div key={i} className="flex flex-col items-center gap-1">
                         <div className={`
-                            flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg transition-all duration-300 shadow-md
+                            flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm transition-all duration-300 shadow-lg border-2
                             ${step >= i 
-                                ? 'bg-white text-cyan-600' 
-                                : 'bg-white/20 text-white backdrop-blur-sm'
+                                ? 'bg-white text-cyan-600 border-white scale-110' 
+                                : 'bg-white/20 text-white/70 border-white/30'
                             }
                         `}>
-                            {step > i ? <CheckCircle className="w-6 h-6" /> : i}
+                            {step > i ? <CheckCircle className="w-5 h-5" /> : i}
                         </div>
+                        <span className={`text-[10px] font-medium uppercase tracking-wide ${step >= i ? 'text-white' : 'text-white/50'}`}>
+                            {i === 1 ? 'Servicios' : i === 2 ? 'Datos' : 'Confirmación'}
+                        </span>
                     </div>
                 ))}
             </div>
           </div>
         </section>
 
-        {/* --- CONTENT SECTION (Donde va la lógica del Wizard) --- */}
-        <section className="container mx-auto px-4 py-16 md:px-6 -mt-20 relative z-20">
+        {/* CONTENT */}
+        <section className="container mx-auto px-4 -mt-16 relative z-20">
             <div className="max-w-4xl mx-auto">
             
-            {/* PASO 1: SELECCIÓN DE SERVICIO */}
+            {/* PASO 1: SELECCIÓN DE SERVICIOS */}
             {step === 1 && (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {servicesLoading && (
-                        <div className="col-span-full py-12 text-center bg-white rounded-xl shadow-lg">Cargando servicios...</div>
-                    )}
-                    
-                    {!servicesLoading && services.map((service) => (
-                        <div 
-                            key={service.id}
-                            onClick={() => handleServiceSelect(service.id, service.name)}
-                            className="group flex items-center justify-between rounded-xl bg-white p-8 shadow-lg transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer border border-slate-50"
-                        >
-                            <div className="flex-1 pr-4">
-                                <h3 className="font-headline text-2xl font-semibold text-gray-700 group-hover:text-cyan-600 transition-colors">
-                                    {service.name}
-                                </h3>
-                                {service.desc && <p className="text-gray-500 mt-2 text-sm">{service.desc}</p>}
-                                {service.price != null && (
-                                    <p className="mt-2 font-medium text-cyan-600">
-                                        ${Number(service.price).toFixed(2)} {service.unit ? `/ ${service.unit}` : ''}
-                                    </p>
-                                )}
+                <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+                    <Card className="shadow-xl border-0 rounded-2xl overflow-hidden">
+                        <CardHeader className="bg-white border-b border-slate-100 pb-4">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <CardTitle className="text-xl text-slate-800">Catálogo</CardTitle>
+                                    <CardDescription>Haz clic para agregar al pedido.</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <ShoppingBag className="h-5 w-5 text-cyan-600" />
+                                    <Badge variant="secondary" className="text-cyan-700 bg-cyan-50 border-cyan-100">{cart.length} en lista</Badge>
+                                </div>
                             </div>
-                            <div className={`transition-transform group-hover:scale-110 ${serviceColorByName[service.name] || 'text-blue-400'}`}>
-                                {serviceIconByName[service.name] ?? <Shirt className="w-12 h-12" />}
+                        </CardHeader>
+                        <CardContent className="p-6 bg-slate-50/50 min-h-[300px]">
+                            {servicesLoading ? (
+                                <div className="text-center py-12 text-slate-400">Cargando catálogo...</div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {services.map((service) => {
+                                        const isSelected = cart.some(i => i.serviceId === service.id);
+                                        const icon = Object.keys(serviceIconByName).find(key => service.name.includes(key)) 
+                                            ? serviceIconByName[Object.keys(serviceIconByName).find(key => service.name.includes(key))!] 
+                                            : serviceIconByName['default'];
+                                        const colorClass = serviceColorByName[Object.keys(serviceColorByName).find(key => service.name.includes(key)) || 'default'];
+
+                                        return (
+                                            <div 
+                                                key={service.id}
+                                                onClick={() => isSelected ? null : addToCart(service)}
+                                                className={`
+                                                    p-4 rounded-xl border transition-all cursor-pointer group flex items-center justify-between active:scale-95
+                                                    ${isSelected 
+                                                        ? 'bg-cyan-50 border-cyan-300 ring-2 ring-cyan-100 opacity-80' 
+                                                        : 'bg-white border-slate-200 hover:border-cyan-400 hover:shadow-md'
+                                                    }
+                                                `}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`p-2.5 rounded-xl ${colorClass} group-hover:scale-110 transition-transform`}>
+                                                        {icon}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-700 text-sm group-hover:text-cyan-700">{service.name}</h4>
+                                                        <p className="text-xs text-slate-400 mt-0.5">
+                                                            {service.desc || 'Servicio estándar'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className={`p-1.5 rounded-full transition-colors ${isSelected ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-cyan-600 group-hover:text-white'}`}>
+                                                    {isSelected ? <CheckCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </CardContent>
+                        
+                        {/* RESUMEN DEL CARRITO */}
+                        {cart.length > 0 && (
+                            <div className="bg-white border-t border-slate-100 p-4">
+                                <h4 className="text-sm font-bold text-slate-700 mb-3 px-1">Servicios Seleccionados:</h4>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {cart.map((item, idx) => (
+                                        <Badge key={idx} variant="outline" className="pl-3 pr-1 py-1.5 bg-slate-50 border-slate-200 text-slate-700 flex items-center gap-2">
+                                            {item.serviceName} 
+                                            <button onClick={() => removeFromCart(idx)} className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 p-3 rounded-xl text-xs">
+                                    <Info className="w-4 h-4 shrink-0" />
+                                    <span>El costo total se calculará al momento de pesar/contar tus prendas en la recolección.</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        )}
+                        <CardFooter className="bg-white p-4 border-t border-slate-100 flex justify-end">
+                            <Button 
+                                onClick={() => setStep(2)} 
+                                disabled={cart.length === 0}
+                                className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg px-8 h-12 text-base font-semibold transition-all hover:scale-[1.02]"
+                            >
+                                Continuar <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
                 </div>
             )}
 
-            {/* PASO 2: FORMULARIO */}
+            {/* PASO 2: FORMULARIO DE RECOLECCIÓN */}
             {step === 2 && (
-                <Card className="rounded-xl shadow-xl border-0 bg-white animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Card className="rounded-2xl shadow-xl border-0 bg-white animate-in slide-in-from-right-8 duration-500">
                     <CardHeader className="border-b border-gray-100 pb-6">
-                        <CardTitle className="text-2xl text-gray-800">Detalles de Recolección</CardTitle>
-                        <CardDescription>
-                            Servicio: <span className="font-bold text-cyan-600">{formData.serviceName}</span>
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-xl text-gray-800">Detalles de agenda</CardTitle>
+                                <CardDescription>Indícanos cuándo pasaría a dejar su ropa.</CardDescription>
+                            </div>
+                            <div className="bg-slate-100 p-2 rounded-lg">
+                                <MapPin className="h-5 w-5 text-slate-500" />
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent className="p-8 space-y-6">
+                        
+                        <div className="space-y-2 relative z-50">
+                            <Label className="text-gray-600 font-medium">Dirección de Recolección</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                                <Input 
+                                    placeholder="Buscar calle, colonia, número..." 
+                                    className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
+                                    value={addressQuery}
+                                    onChange={handleAddressChange}
+                                    onFocus={() => addressQuery.length > 0 && setShowSuggestions(true)}
+                                />
+                                {formData.address && (
+                                    <button 
+                                        onClick={() => {setAddressQuery(''); setFormData({...formData, address: ''}); }}
+                                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* Autocompletado Simulado Estilo Google */}
+                            {showSuggestions && filteredAddresses.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto animate-in fade-in slide-in-from-top-1">
+                                    {filteredAddresses.map((addr, idx) => (
+                                        <button
+                                            key={idx}
+                                            className="w-full text-left px-4 py-3.5 hover:bg-slate-50 text-sm text-slate-700 flex items-center gap-3 border-b border-slate-50 last:border-0 transition-colors"
+                                            onClick={() => selectAddress(addr)}
+                                        >
+                                            <div className="bg-slate-100 p-1.5 rounded-full text-slate-500">
+                                                <MapPin className="h-4 w-4" />
+                                            </div>
+                                            <span className="truncate">{addr}</span>
+                                        </button>
+                                    ))}
+                                    <div className="bg-slate-50 p-2 text-xs text-center text-slate-400 border-t border-slate-100">
+                                        Resultados simulados por Google Maps
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label className="text-gray-600">Fecha</Label>
+                                <Label className="text-gray-600 font-medium">Fecha</Label>
                                 <div className="relative">
-                                    <CalendarIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                     <Input 
                                         type="date" 
-                                        className="pl-10 h-12 rounded-lg border-gray-200 bg-gray-50 focus:bg-white transition-colors"
+                                        className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
                                         value={formData.date}
                                         onChange={(e) => setFormData({...formData, date: e.target.value})}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-gray-600">Hora</Label>
+                                <Label className="text-gray-600 font-medium">Hora Preferida</Label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <Clock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                     <Input 
                                         type="time" 
-                                        className="pl-10 h-12 rounded-lg border-gray-200 bg-gray-50 focus:bg-white transition-colors"
+                                        className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
                                         value={formData.time}
                                         onChange={(e) => setFormData({...formData, time: e.target.value})}
                                     />
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="space-y-2">
-                            <Label className="text-gray-600">Dirección</Label>
+                            <Label className="text-gray-600 font-medium">Teléfono de Contacto</Label>
                             <div className="relative">
-                                <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                <Phone className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                 <Input 
-                                    placeholder="Calle, Número, Colonia..." 
-                                    className="pl-10 h-12 rounded-lg border-gray-200 bg-gray-50 focus:bg-white transition-colors"
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                    type="tel" 
+                                    placeholder="55 1234 5678"
+                                    className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-gray-600">Notas (Opcional)</Label>
+                            <Label className="text-gray-600 font-medium">Instrucciones Adicionales</Label>
                             <Textarea 
-                                placeholder="Ej: Timbre no sirve..." 
-                                className="rounded-lg border-gray-200 bg-gray-50 focus:bg-white transition-colors resize-none min-h-[100px]"
+                                placeholder="Ej: 'Ropa delicada en bolsa aparte'..." 
+                                className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors resize-none min-h-[100px]"
                                 value={formData.notes}
                                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                             />
                         </div>
                     </CardContent>
-                    <CardFooter className="bg-gray-50 p-6 flex justify-between rounded-b-xl">
-                        <Button variant="ghost" onClick={() => setStep(1)} className="text-gray-500 hover:text-gray-800">
+                    <CardFooter className="bg-slate-50 p-6 flex justify-between rounded-b-2xl border-t border-slate-100">
+                        <Button variant="ghost" onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-800 hover:bg-white border border-transparent hover:border-slate-200 rounded-xl px-6 h-11">
                             <ArrowLeft className="mr-2 h-4 w-4" /> Volver
                         </Button>
                         <Button 
                             onClick={handleSubmit} 
-                            disabled={loading || !formData.date || !formData.address}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg shadow-md px-8 h-11"
+                            disabled={loading || !formData.date || !formData.address || !formData.phone}
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200 px-8 h-11 transition-all hover:scale-[1.02]"
                         >
-                            {loading ? 'Procesando...' : 'Confirmar Pedido'} <ArrowRight className="ml-2 h-4 w-4" />
+                            {loading ? 'Enviando...' : 'Confirmar Solicitud'} <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     </CardFooter>
                 </Card>
@@ -374,25 +610,26 @@ export default function SchedulePage() {
 
             {/* PASO 3: CONFIRMACIÓN */}
             {step === 3 && (
-                <Card className="rounded-xl shadow-xl border-0 bg-white text-center py-16 animate-in zoom-in-95 duration-500">
+                <Card className="rounded-2xl shadow-2xl border-0 bg-white text-center py-16 animate-in zoom-in-95 duration-500">
                     <CardContent className="flex flex-col items-center">
-                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                            <CheckCircle className="w-10 h-10 text-green-600" />
+                        <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 border-4 border-green-100 animate-bounce-slow">
+                            <CheckCircle className="w-12 h-12 text-green-600" />
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-800 mb-2">¡Pedido Recibido!</h2>
-                        <p className="text-gray-500 max-w-md mx-auto mb-8">
-                            Hemos registrado tu solicitud de <strong>{formData.serviceName}</strong>. 
-                            Pasaremos el <strong>{formData.date}</strong> a las <strong>{formData.time}</strong>.
+                        <h2 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">¡Solicitud Recibida!</h2>
+                        <p className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+                            Hemos agendado tu recolección. Un repartidor pasará por tu domicilio el <strong className="text-cyan-700">{formData.date}</strong> a las <strong className="text-cyan-700">{formData.time}</strong>.
                         </p>
                         <div className="flex gap-4">
-                            <Button variant="outline" onClick={() => router.push('/')} className="h-11 px-6 rounded-lg">
-                                Volver al Inicio
+                            <Button variant="outline" onClick={() => router.push('/')} className="h-12 px-8 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
+                                Ir al Inicio
                             </Button>
-                            <Button className="bg-cyan-600 hover:bg-cyan-700 text-white h-11 px-6 rounded-lg shadow-md" onClick={() => {
+                            <Button className="bg-cyan-600 hover:bg-cyan-700 text-white h-12 px-8 rounded-xl shadow-lg shadow-cyan-200" onClick={() => {
                                 setStep(1);
-                                setFormData({serviceType: '', serviceName: '', date: '', time: '', address: '', notes: ''});
+                                setCart([]);
+                                setFormData({ date: '', time: '', address: '', notes: '', phone: '' });
+                                setAddressQuery('');
                             }}>
-                                Agendar Otro
+                                Solicitar Otro
                             </Button>
                         </div>
                     </CardContent>
@@ -402,32 +639,39 @@ export default function SchedulePage() {
         </section>
       </main>
 
-      {/* --- FOOTER (Estilo de Referencia) --- */}
-      <footer className="bg-gray-100 py-6 mt-auto">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
-          <p className="text-sm text-gray-500">
-            © 2025 José Fernando Garcia Quintero
+      {/* --- FOOTER --- */}
+      <footer className="bg-gray-100 py-8 border-t border-slate-200 mt-auto">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 md:flex-row md:px-6">
+          <p className="text-sm text-gray-500 font-medium">
+            © 2025 Lavandería Angy.
           </p>
           <div className="flex items-center gap-6">
-             <div className="flex gap-4">
-              <Link href="#" className="text-gray-500 hover:text-cyan-600">
+             <div className="flex gap-3">
+              <Link href="#" className="text-gray-400 hover:text-blue-600 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
                 <FacebookIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-500 hover:text-cyan-600">
+              <Link href="#" className="text-gray-400 hover:text-sky-500 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
                 <TwitterIcon className="h-5 w-5" />
               </Link>
-              <Link href="#" className="text-gray-500 hover:text-cyan-600">
+              <Link href="#" className="text-gray-400 hover:text-pink-600 transition-colors bg-white p-2 rounded-full shadow-sm hover:shadow-md">
                 <InstagramIcon className="h-5 w-5" />
               </Link>
             </div>
-             <div className="flex gap-4 text-sm">
-                 <Link href="#" className="text-gray-500 hover:text-cyan-600">Blog</Link>
-                <Link href="#" className="text-gray-500 hover:text-cyan-600">Support</Link>
-                <Link href="#" className="text-gray-500 hover:text-cyan-600">Developers</Link>
-             </div>
           </div>
         </div>
       </footer>
+
+      {/* BOTÓN FLOTANTE DE AYUDA */}
+      <a 
+        href="tel:3121234567"
+        className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-xl shadow-green-200/50 transition-all hover:scale-105 flex items-center gap-2 group"
+      >
+        <Phone className="w-6 h-6" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-in-out whitespace-nowrap font-medium px-0 group-hover:px-2">
+          ¿Ayuda? 312 123 4567
+        </span>
+      </a>
+
     </div>
   );
 }
