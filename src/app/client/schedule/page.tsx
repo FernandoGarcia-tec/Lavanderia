@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 import Link from "next/link";
 import { 
   CheckCircle, 
@@ -112,6 +113,7 @@ interface CartItem {
   serviceId: string;
   serviceName: string;
   unit: string;
+  priceUnit: number;
 }
 
 export default function SchedulePage() {
@@ -135,6 +137,8 @@ export default function SchedulePage() {
     phone: '',
     notes: ''
   });
+  // Calcular la fecha mínima (hoy) para el input date
+  const minDate = format(new Date(), 'yyyy-MM-dd');
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -172,7 +176,8 @@ export default function SchedulePage() {
       const newItem: CartItem = {
           serviceId: service.id,
           serviceName: service.name,
-          unit: service.unit
+          unit: service.unit,
+          priceUnit: service.price || 0
       };
       setCart([...cart, newItem]);
       toast({ title: "Agregado", description: `${service.name} añadido a la lista.` });
@@ -435,6 +440,7 @@ export default function SchedulePage() {
                                     <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                     <Input 
                                         type="date" 
+                                        min={minDate}
                                         className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
                                         value={formData.date}
                                         onChange={(e) => setFormData({...formData, date: e.target.value})}
@@ -442,15 +448,41 @@ export default function SchedulePage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-gray-600 font-medium">Hora</Label>
+                                <Label className="text-gray-600 font-medium">Hora (8:00 AM - 8:00 PM)</Label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                                    <Input 
-                                        type="time" 
-                                        className="pl-10 h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors"
+                                    <Clock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400 z-10" />
+                                    <select
+                                        className="w-full pl-10 h-12 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-cyan-500 transition-colors appearance-none cursor-pointer text-sm"
                                         value={formData.time}
                                         onChange={(e) => setFormData({...formData, time: e.target.value})}
-                                    />
+                                    >
+                                        <option value="">Selecciona una hora</option>
+                                        <option value="08:00">08:00 AM</option>
+                                        <option value="08:30">08:30 AM</option>
+                                        <option value="09:00">09:00 AM</option>
+                                        <option value="09:30">09:30 AM</option>
+                                        <option value="10:00">10:00 AM</option>
+                                        <option value="10:30">10:30 AM</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="11:30">11:30 AM</option>
+                                        <option value="12:00">12:00 PM</option>
+                                        <option value="12:30">12:30 PM</option>
+                                        <option value="13:00">01:00 PM</option>
+                                        <option value="13:30">01:30 PM</option>
+                                        <option value="14:00">02:00 PM</option>
+                                        <option value="14:30">02:30 PM</option>
+                                        <option value="15:00">03:00 PM</option>
+                                        <option value="15:30">03:30 PM</option>
+                                        <option value="16:00">04:00 PM</option>
+                                        <option value="16:30">04:30 PM</option>
+                                        <option value="17:00">05:00 PM</option>
+                                        <option value="17:30">05:30 PM</option>
+                                        <option value="18:00">06:00 PM</option>
+                                        <option value="18:30">06:30 PM</option>
+                                        <option value="19:00">07:00 PM</option>
+                                        <option value="19:30">07:30 PM</option>
+                                        <option value="20:00">08:00 PM</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
