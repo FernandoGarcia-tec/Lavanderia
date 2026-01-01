@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'node';
+export const runtime = 'nodejs';
 
 async function initAdmin() {
   // dynamic import to avoid bundling in edge
