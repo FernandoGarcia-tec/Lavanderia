@@ -250,8 +250,21 @@ export default function ServicesPage() {
           await setDoc(doc(firestore, 'users', j.docId), { phone: newClientPhone.trim() }, { merge: true });
       }
 
+      // Crear notificación de bienvenida para el nuevo cliente
+      const clientDocId = j.docId || j.uid;
+      if (clientDocId) {
+        await addDoc(collection(firestore, 'notifications'), {
+          userId: clientDocId,
+          type: 'welcome',
+          title: '🎉 ¡Bienvenido a Lavandería Angy!',
+          message: `Hola ${newClientName.trim()}, tu cuenta ha sido creada. Ya puedes programar tus servicios de lavandería.`,
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+
       const newClient = { 
-        id: j.docId || j.uid, 
+        id: clientDocId, 
         name: newClientName.trim(), 
         email: newClientEmail.trim(), 
         phone: newClientPhone.trim() 

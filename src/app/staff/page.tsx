@@ -52,6 +52,13 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Mensajes de notificación por estado
+const STATUS_NOTIFICATION_MESSAGES: Record<string, { title: string; message: string }> = {
+  en_progreso: { title: '🔄 Pedido en Proceso', message: 'Tu ropa está siendo lavada' },
+  completado: { title: '✅ ¡Pedido Listo!', message: 'Tu ropa está lista para recoger' },
+  entregado: { title: '📦 Pedido Entregado', message: '¡Gracias por tu preferencia!' },
+};
+
 // Configuración de estados con colores y acciones
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'orange', icon: Clock, next: 'en_progreso', nextLabel: 'Iniciar', nextIcon: PlayCircle },
@@ -276,6 +283,22 @@ export default function StaffDashboard() {
         [`${config.next}At`]: serverTimestamp(),
         [`${config.next}By`]: staffName || 'Personal'
       });
+      
+      // Crear notificación para el cliente
+      const notifConfig = STATUS_NOTIFICATION_MESSAGES[config.next];
+      if (notifConfig && order.userId) {
+        await addDoc(collection(firestore, 'notifications'), {
+          userId: order.userId,
+          orderId: order.id,
+          type: 'status_change',
+          title: notifConfig.title,
+          message: notifConfig.message,
+          status: config.next,
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+      
       toast({ 
         title: '✓ Actualizado', 
         description: `${order.clientName} → ${STATUS_CONFIG[config.next as keyof typeof STATUS_CONFIG]?.label}`,
@@ -314,6 +337,21 @@ export default function StaffDashboard() {
       };
       
       await updateDoc(doc(firestore, 'orders', deliverTarget.id), updates);
+      
+      // Crear notificación de entrega para el cliente
+      const notifConfig = STATUS_NOTIFICATION_MESSAGES['entregado'];
+      if (notifConfig && deliverTarget.userId) {
+        await addDoc(collection(firestore, 'notifications'), {
+          userId: deliverTarget.userId,
+          orderId: deliverTarget.id,
+          type: 'status_change',
+          title: notifConfig.title,
+          message: notifConfig.message,
+          status: 'entregado',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
       
       toast({ title: '🎉 ¡Entrega Exitosa!', description: `Entregado a ${deliverTarget.clientName || 'Cliente'}.` });
       setDeliverModalOpen(false);
@@ -600,7 +638,7 @@ export default function StaffDashboard() {
                             ) : (
                                 filteredOrders.map((order) => {
                                     const delivery = order.deliveryDate?.toDate ? order.deliveryDate.toDate() : null;
-                                    const isPaid = order.paymentStatus === 'pagado' || order.paymentMethod !== 'pagar_al_retiro';
+                                    const isPaid = order.paymentStatus === 'pagado' || (order.paymentMethod && order.paymentMethod !== 'pagar_al_retiro');
                                     const statusConfig = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG];
                                     const StatusIcon = statusConfig?.icon || Clock;
                                     const NextIcon = statusConfig?.nextIcon;
@@ -900,7 +938,7 @@ export default function StaffDashboard() {
 
                     {/* Info importante */}
                     {(() => {
-                        const isPaidDetail = detailsTarget?.paymentStatus === 'pagado' || detailsTarget?.paymentMethod !== 'pagar_al_retiro';
+                        const isPaidDetail = detailsTarget?.paymentStatus === 'pagado' || (detailsTarget?.paymentMethod && detailsTarget?.paymentMethod !== 'pagar_al_retiro');
                         return (
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-green-50 p-3 rounded-xl border border-green-100">

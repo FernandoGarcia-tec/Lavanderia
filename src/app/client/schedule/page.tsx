@@ -14,7 +14,6 @@ import {
   Package2,
   Droplets,
   Brush,
-  Bell,
   User,
   Shirt,
   Wind,
@@ -26,6 +25,7 @@ import {
   Phone,
   X
 } from "lucide-react";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -254,9 +254,7 @@ export default function SchedulePage() {
             <Link href="/client/schedule" className="text-sm font-medium text-cyan-700 bg-cyan-50 px-3 py-1.5 rounded-full transition-colors">
               Programar servicio
             </Link>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5 text-gray-600" />
-            </Button>
+            <NotificationBell />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -538,7 +536,7 @@ export default function SchedulePage() {
                             Hemos agendado tu servicio. Puedes pasar a entregar el dia: <strong className="text-cyan-700">{formData.date}</strong> a las <strong className="text-cyan-700">{formData.time}</strong>.
                         </p>
                         <div className="flex gap-4">
-                            <Button variant="outline" onClick={() => router.push('/')} className="h-12 px-8 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
+                            <Button variant="outline" onClick={() => router.push('/client/schedule')} className="h-12 px-8 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900">
                                 Ir al Inicio
                             </Button>
                             <Button className="bg-cyan-600 hover:bg-cyan-700 text-white h-12 px-8 rounded-xl shadow-lg shadow-cyan-200" onClick={() => {

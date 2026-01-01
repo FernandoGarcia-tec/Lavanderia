@@ -123,12 +123,65 @@ export default function UsersPage() {
 
   // --- Acciones ---
 
+  // Función auxiliar para enviar notificaciones por email/WhatsApp
+  async function sendStatusNotification(userData: any, newStatus: string) {
+    try {
+      const hasEmail = userData.email && userData.email.trim();
+      const hasPhone = userData.phone && userData.phone.trim();
+      
+      if (!hasEmail && !hasPhone) {
+        console.log('Usuario sin email ni teléfono, no se envía notificación externa');
+        return;
+      }
+
+      let channel = 'email'; // por defecto email
+      if (hasEmail && hasPhone) {
+        channel = 'both';
+      } else if (hasPhone && !hasEmail) {
+        channel = 'whatsapp';
+      }
+
+      const response = await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel,
+          to: {
+            email: userData.email,
+            phone: userData.phone,
+          },
+          name: userData.name || 'Usuario',
+          status: newStatus,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.email) {
+        toast({ title: '📧 Correo enviado', description: `Se notificó a ${userData.email}` });
+      }
+      if (result.whatsapp) {
+        toast({ title: '💬 WhatsApp enviado', description: `Se notificó al ${userData.phone}` });
+      }
+      if (result.errors?.length > 0) {
+        console.warn('Errores al notificar:', result.errors);
+      }
+    } catch (err) {
+      console.error('Error enviando notificación:', err);
+    }
+  }
+
   async function setStatus(uid: string, status: string) {
     try {
       const beforeSnap = await getDoc(doc(firestore, 'users', uid));
       const before = beforeSnap.exists() ? beforeSnap.data() : null;
       await updateDoc(doc(firestore, 'users', uid), { status });
       toast({ title: `Usuario ${status}`, description: `El estado ha sido actualizado.` });
+      
+      // Enviar notificación por correo/WhatsApp
+      if (before && (status === 'aprobado' || status === 'rechazado')) {
+        sendStatusNotification(before, status);
+      }
       
       writeAudit(firestore, {
         actorUid: auth?.currentUser?.uid ?? null,

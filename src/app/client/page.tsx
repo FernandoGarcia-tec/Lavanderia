@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Bell, CloudIcon, ShirtIcon, User } from "lucide-react";
+import { CloudIcon, ShirtIcon, User } from "lucide-react";
 import { useAuth } from '@/firebase/provider';
 import { signOut } from 'firebase/auth';
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from 'next/navigation';
+import { NotificationBell } from "@/components/notification-bell";
 
 const StoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -153,7 +154,7 @@ export default function ClientDashboard() {
     <div className="flex min-h-screen flex-col bg-white font-body">
       <header className="sticky top-0 z-50 w-full bg-white/80 shadow-sm backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="#" className="font-headline text-lg font-bold text-gray-800">
+          <Link href="/client/" className="font-headline text-lg font-bold text-gray-800">
             Lavandería y Planchaduría Angy
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
@@ -164,15 +165,18 @@ export default function ClientDashboard() {
               Programar servicio
             </Link>
             <Link
-              href="#"
+              href="/client/orders"
+              className="text-sm font-medium text-gray-600 transition-colors hover:text-primary"
+            >
+              Mi ropa
+            </Link>
+            <Link
+              href="/client/history"
               className="text-sm font-medium text-gray-600 transition-colors hover:text-primary"
             >
               Historial de pedidos
             </Link>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="sr-only">Notificaciones</span>
-            </Button>
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors">
@@ -234,7 +238,7 @@ export default function ClientDashboard() {
                 <StoreIcon className="h-20 w-20 text-blue-400 transition-transform group-hover:scale-110" />
               </div>
             </Link>
-            <Link href="#">
+            <Link href="/client/orders">
               <div className="group flex items-center justify-between rounded-lg bg-cyan-50/50 p-8 transition-shadow hover:shadow-lg">
                 <div>
                   <h3 className="font-headline text-2xl font-semibold text-gray-700">
@@ -244,7 +248,7 @@ export default function ClientDashboard() {
                 <ShirtIcon className="h-20 w-20 text-blue-400 transition-transform group-hover:scale-110" /> 
               </div>
             </Link>
-            <Link href="#">
+            <Link href="/client/history">
               <div className="group flex items-center justify-between rounded-lg bg-cyan-50/50 p-8 transition-shadow hover:shadow-lg">
                 <div>
                   <h3 className="font-headline text-2xl font-semibold text-gray-700">
