@@ -6,6 +6,7 @@ import { Archive, ClipboardList, HandCoins, LogOut, Banknote } from "lucide-reac
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { AuthGuard } from "@/components/auth-guard";
 import {
   SidebarProvider,
   Sidebar,
@@ -91,6 +92,7 @@ export default function StaffLayout({
   };
 
   return (
+    <AuthGuard allowedRoles={['staff', 'admin']}>
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white shadow-sm">
         <SidebarHeader className="h-16 flex items-center justify-center border-b border-slate-100 bg-slate-50/50">
@@ -224,5 +226,6 @@ export default function StaffLayout({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </AuthGuard>
   );
 }

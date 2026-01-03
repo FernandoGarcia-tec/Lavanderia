@@ -11,6 +11,7 @@ import { signOut } from "firebase/auth";
 
 import { AppLogo } from "@/components/app-logo";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { AuthGuard } from "@/components/auth-guard";
 import {
   SidebarProvider,
   Sidebar,
@@ -80,6 +81,7 @@ export default function AdminLayout({
   }, [firestore]);
 
   return (
+    <AuthGuard allowedRoles={['admin']}>
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white shadow-sm">
         <SidebarHeader className="h-16 flex items-center justify-center border-b border-slate-100 bg-slate-50/50">
@@ -196,5 +198,6 @@ export default function AdminLayout({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </AuthGuard>
   );
 }

@@ -5,8 +5,11 @@ import { HideNextDevTools } from '@/components/hide-next-devtools';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Plataforma ANGY',
+  title: 'Lavanderia ANGY',
   description: 'Desarrollo de software para la gestión de lavandería ANGY por José Fernando Garcia Quintero',
+  icons: {
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧺</text></svg>",
+  },
 };
 
 export default function RootLayout({
