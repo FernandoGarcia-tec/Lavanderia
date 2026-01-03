@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Search, 
@@ -23,7 +23,8 @@ import {
   Plus,
   Trash2,
   ShoppingBasket,
-  PenTool
+  PenTool,
+  Printer
 } from "lucide-react";
 import { 
   Card, 
@@ -140,6 +141,23 @@ export default function ServicesPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
   const [notes, setNotes] = useState("");
+
+  // Receipt State
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [lastOrder, setLastOrder] = useState<{
+    orderId: string;
+    clientName: string;
+    clientPhone?: string;
+    items: CartItem[];
+    total: string;
+    paymentMethod: string;
+    deliveryDate: Date;
+    deliveryTime: string;
+    staffName: string;
+    createdAt: Date;
+    notes?: string;
+  } | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   // Computed
   const tempService = useMemo(() => servicesList.find(s => s.id === tempServiceId) || null, [servicesList, tempServiceId]);
@@ -263,6 +281,25 @@ export default function ServicesPage() {
         });
       }
 
+      // Enviar correo de bienvenida con credenciales (si tiene email)
+      if (newClientEmail.trim()) {
+        try {
+          await fetch('/api/send-welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: newClientEmail.trim(),
+              name: newClientName.trim(),
+              password: defaultPass,
+            }),
+          });
+          toast({ title: "📧 Correo enviado", description: "Se envió el correo de bienvenida con las credenciales." });
+        } catch (emailErr) {
+          console.error('Error enviando correo:', emailErr);
+          // No interrumpir el flujo si falla el correo
+        }
+      }
+
       const newClient = { 
         id: clientDocId, 
         name: newClientName.trim(), 
@@ -350,6 +387,230 @@ export default function ServicesPage() {
     setCart(newCart);
   };
 
+  // Función para imprimir recibo en impresora térmica 58mm (EC-5890X)
+  const handlePrintReceipt = () => {
+    if (!lastOrder) return;
+    
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    if (!printWindow) {
+      toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
+      return;
+    }
+
+    const paymentLabels: Record<string, string> = {
+      'efectivo': 'Efectivo',
+      'terminal': 'Tarjeta',
+      'transferencia': 'Transferencia',
+      'pagar_al_retiro': 'Pago Pendiente'
+    };
+
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Recibo #${lastOrder.orderId}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          @page {
+            size: 58mm auto;
+            margin: 0mm 2mm 0mm 2mm;
+          }
+          html, body {
+            width: 58mm;
+            margin: 0 auto;
+          }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            font-weight: bold;
+            color: #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 2mm 3mm;
+            line-height: 1.5;
+          }
+          .receipt-container {
+            width: 100%;
+            max-width: 52mm;
+            margin: 0 auto;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: 900; }
+          .separator {
+            border-top: 2px dashed #000000;
+            margin: 5px 0;
+          }
+          .double-separator {
+            border-top: 3px solid #000000;
+            margin: 6px 0;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 8px;
+          }
+          .logo {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #000000;
+          }
+          .subtitle {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000000;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: bold;
+          }
+          .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 0;
+          }
+          .item-name {
+            max-width: 60%;
+            word-wrap: break-word;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 900;
+            margin-top: 4px;
+            color: #000000;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: bold;
+          }
+          .order-id {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #000000;
+          }
+          .notes {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 4px;
+            padding: 4px;
+            border: 1px solid #000;
+          }
+          @media print {
+            html, body { 
+              width: 58mm; 
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .receipt-container {
+              width: 100%;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+        <div class="header">
+          <div class="logo">LAVANDERÍA ANGY</div>
+          <div class="subtitle">Servicio de Calidad</div>
+        </div>
+        
+        <div class="double-separator"></div>
+        
+        <div class="center">
+          <div class="order-id">Folio: ${lastOrder.orderId}</div>
+          <div style="font-size: 10px;">${format(lastOrder.createdAt, "dd/MM/yyyy HH:mm")}</div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="info-row">
+            <span>Cliente:</span>
+            <span class="bold">${lastOrder.clientName}</span>
+          </div>
+          ${lastOrder.clientPhone ? `<div class="info-row"><span>Tel:</span><span>${lastOrder.clientPhone}</span></div>` : ''}
+          <div class="info-row">
+            <span>Atendió:</span>
+            <span>${lastOrder.staffName}</span>
+          </div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
+          ${lastOrder.items.map(item => `
+            <div class="item-row">
+              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+              <span>$${item.subtotal.toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="double-separator"></div>
+        
+        <div class="total-row">
+          <span>TOTAL:</span>
+          <span>$${lastOrder.total}</span>
+        </div>
+        
+        <div class="info-row" style="margin-top: 4px;">
+          <span>Pago:</span>
+          <span>${paymentLabels[lastOrder.paymentMethod] || lastOrder.paymentMethod}</span>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="bold">ENTREGA:</div>
+          <div class="center" style="font-size: 13px;">
+            ${format(lastOrder.deliveryDate, "EEEE dd/MM", { locale: es })}
+          </div>
+          <div class="center bold" style="font-size: 14px;">
+            ${lastOrder.deliveryTime} hrs
+          </div>
+        </div>
+        
+        ${lastOrder.notes ? `<div class="notes">Notas: ${lastOrder.notes}</div>` : ''}
+        
+        <div class="double-separator"></div>
+        
+        <div class="footer">
+          <div>¡Gracias por su preferencia!</div>
+          <div>Puede revisar su servicio en nuestro sitio web</div>
+          <div>lavanderiaangy.vercel.app/</div>
+          <div style="margin-top: 4px;">Conserve este ticket</div>
+        </div>
+        
+        </div> <!-- cierre receipt-container -->
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
+  };
+
   const handleCreateOrder = async () => {
     if (!selectedClient || cart.length === 0 || !deliveryDate || !deliveryTime) return;
     
@@ -394,10 +655,28 @@ export default function ServicesPage() {
         after: { ...orderData, deliveryDate: deliveryDateTime.toISOString() }
       });
 
+      // Guardar datos para el recibo
+      setLastOrder({
+        orderId: docRef.id.slice(0, 6).toUpperCase(),
+        clientName: selectedClient.name,
+        clientPhone: selectedClient.phone,
+        items: [...cart],
+        total: cartTotal,
+        paymentMethod,
+        deliveryDate: deliveryDateTime,
+        deliveryTime,
+        staffName,
+        createdAt: new Date(),
+        notes: notes.trim() || undefined
+      });
+
       toast({ title: "Pedido creado con éxito", description: `Orden #${docRef.id.slice(0,6).toUpperCase()}` });
       
-      // Reset Form
+      // Cerrar confirmación y mostrar modal de recibo
       setConfirmOpen(false);
+      setReceiptOpen(true);
+      
+      // Reset Form
       setSelectedClient(null);
       setSearchTerm("");
       setCart([]);
@@ -933,6 +1212,58 @@ export default function ServicesPage() {
                     className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl px-8 w-full sm:w-auto shadow-md shadow-cyan-200"
                 >
                     {processingOrder ? 'Procesando...' : 'Confirmar Orden'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Recibo - Impresión Térmica */}
+      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
+        <DialogContent className="rounded-2xl sm:max-w-sm">
+            <DialogHeader>
+                <div className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-2 text-green-600">
+                    <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <DialogTitle className="text-center text-xl text-slate-800">¡Pedido Creado!</DialogTitle>
+                <DialogDescription className="text-center">Orden #{lastOrder?.orderId} registrada exitosamente</DialogDescription>
+            </DialogHeader>
+            
+            {lastOrder && (
+              <div className="bg-slate-50 p-4 rounded-xl space-y-2 text-sm border border-slate-100 mt-2">
+                  <div className="flex justify-between">
+                      <span className="text-slate-500">Cliente</span>
+                      <span className="font-semibold text-slate-800">{lastOrder.clientName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                      <span className="text-slate-500">Servicios</span>
+                      <span className="text-slate-700">{lastOrder.items.length} ítem(s)</span>
+                  </div>
+                  <div className="flex justify-between">
+                      <span className="text-slate-500">Entrega</span>
+                      <span className="text-slate-700">{format(lastOrder.deliveryDate, "dd/MM")} {lastOrder.deliveryTime}</span>
+                  </div>
+                  <div className="h-px bg-slate-200 my-2" />
+                  <div className="flex justify-between items-center">
+                      <span className="font-bold text-slate-700">Total</span>
+                      <span className="font-bold text-cyan-700 text-lg">${lastOrder.total}</span>
+                  </div>
+              </div>
+            )}
+
+            <DialogFooter className="flex-col gap-2 mt-4">
+                <Button 
+                    onClick={handlePrintReceipt}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-12 shadow-md shadow-cyan-200 flex items-center justify-center gap-2"
+                >
+                    <Printer className="w-5 h-5" />
+                    Imprimir Recibo
+                </Button>
+                <Button 
+                    variant="outline" 
+                    onClick={() => setReceiptOpen(false)} 
+                    className="w-full rounded-xl border-slate-200"
+                >
+                    Cerrar
                 </Button>
             </DialogFooter>
         </DialogContent>
