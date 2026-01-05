@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Search, 
@@ -701,15 +701,15 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] p-4 md:p-8 space-y-6">
+    <div className="relative min-h-[calc(100vh-4rem)] p-3 md:p-6 lg:p-8 space-y-5 lg:space-y-6 pos-mode">
         
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Registrar Pedido</h1>
-          <p className="text-slate-500">Crea una nueva orden de servicio de forma rápida.</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight">Registrar Pedido</h1>
+          <p className="text-slate-500 text-sm lg:text-base">Crea una nueva orden de servicio de forma rápida.</p>
         </div>
         <div className="hidden md:block">
-            <Badge variant="outline" className="px-3 py-1 bg-white text-slate-600 border-slate-200 shadow-sm">
+            <Badge variant="outline" className="px-4 py-2 bg-white text-slate-600 border-slate-200 shadow-sm text-sm lg:text-base">
                 Atendiendo: <span className="font-semibold ml-1 text-cyan-700">{staffName}</span>
             </Badge>
         </div>
@@ -723,8 +723,8 @@ export default function ServicesPage() {
             {/* 1. SELECCIÓN DE CLIENTE */}
             <Card className="border-slate-200 shadow-sm overflow-visible">
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <User className="h-5 w-5 text-cyan-600" />
+                    <CardTitle className="text-lg lg:text-xl flex items-center gap-2">
+                        <User className="h-5 w-5 lg:h-6 lg:w-6 text-cyan-600" />
                         Cliente
                     </CardTitle>
                 </CardHeader>
@@ -732,23 +732,23 @@ export default function ServicesPage() {
                     {!selectedClient ? (
                         <div className="space-y-4">
                             <div className="relative">
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                                 <Input 
                                     placeholder="Buscar cliente por nombre o correo..." 
-                                    className="pl-10 h-11 rounded-xl border-slate-200 focus-visible:ring-cyan-500 bg-slate-50/30"
+                                    className="pl-12 h-12 lg:h-14 rounded-xl border-slate-200 focus-visible:ring-cyan-500 bg-slate-50/30 text-base lg:text-lg"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                                 {searchTerm.length > 1 && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-                                        {loadingClients && <div className="p-3 text-sm text-slate-500 text-center">Buscando...</div>}
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto">
+                                        {loadingClients && <div className="p-4 text-base text-slate-500 text-center">Buscando...</div>}
                                         {!loadingClients && clients.length === 0 && (
-                                            <div className="p-3 text-sm text-slate-500 text-center">No se encontraron clientes.</div>
+                                            <div className="p-4 text-base text-slate-500 text-center">No se encontraron clientes.</div>
                                         )}
                                         {clients.map(client => (
                                             <button 
                                                 key={client.id}
-                                                className="w-full text-left px-4 py-3 hover:bg-cyan-50 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group"
+                                                className="w-full text-left px-5 py-4 hover:bg-cyan-50 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group active:scale-[0.98] min-h-[64px]"
                                                 onClick={() => {
                                                     setSelectedClient(client);
                                                     setSearchTerm("");
@@ -756,13 +756,13 @@ export default function ServicesPage() {
                                                 }}
                                             >
                                                 <div>
-                                                    <p className="font-medium text-slate-800 group-hover:text-cyan-700">{client.name}</p>
-                                                    <p className="text-xs text-slate-500 flex items-center gap-2">
+                                                    <p className="font-medium text-slate-800 group-hover:text-cyan-700 text-base lg:text-lg">{client.name}</p>
+                                                    <p className="text-sm text-slate-500 flex items-center gap-2">
                                                         <span>{client.email || 'Sin correo'}</span>
-                                                        {client.phone && <span className="text-cyan-600 font-mono bg-cyan-50 px-1 rounded">📞 {client.phone}</span>}
+                                                        {client.phone && <span className="text-cyan-600 font-mono bg-cyan-50 px-2 py-0.5 rounded">📞 {client.phone}</span>}
                                                     </p>
                                                 </div>
-                                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-cyan-400" />
+                                                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-cyan-400" />
                                             </button>
                                         ))}
                                     </div>
@@ -770,28 +770,28 @@ export default function ServicesPage() {
                             </div>
                             <Button 
                                 variant="outline" 
-                                className="w-full h-11 border-dashed border-slate-300 text-slate-600 hover:text-cyan-700 hover:border-cyan-300 hover:bg-cyan-50/50 rounded-xl"
+                                className="w-full h-12 lg:h-14 border-dashed border-slate-300 text-slate-600 hover:text-cyan-700 hover:border-cyan-300 hover:bg-cyan-50/50 rounded-xl text-base active:scale-[0.98]"
                                 onClick={() => setIsAddModalOpen(true)}
                             >
-                                <UserPlus className="mr-2 h-4 w-4" /> Registrar Nuevo Cliente
+                                <UserPlus className="mr-2 h-5 w-5" /> Registrar Nuevo Cliente
                             </Button>
                         </div>
                     ) : (
-                        <div className="bg-cyan-50/60 border border-cyan-100 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold border border-cyan-200">
+                        <div className="bg-cyan-50/60 border border-cyan-100 rounded-xl p-4 lg:p-5 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold border border-cyan-200 text-lg lg:text-xl">
                                     {selectedClient.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-800">{selectedClient.name}</p>
-                                    <div className="flex flex-col sm:flex-row sm:gap-3 text-sm text-slate-500">
+                                    <p className="font-bold text-slate-800 text-base lg:text-lg">{selectedClient.name}</p>
+                                    <div className="flex flex-col sm:flex-row sm:gap-3 text-sm lg:text-base text-slate-500">
                                         <p>{selectedClient.email || 'Sin correo'}</p>
                                         {selectedClient.phone && <p className="text-cyan-700 font-medium">📞 {selectedClient.phone}</p>}
                                     </div>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedClient(null)} className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                                <X className="h-5 w-5" />
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedClient(null)} className="h-11 w-11 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                                <X className="h-6 w-6" />
                             </Button>
                         </div>
                     )}
@@ -801,19 +801,19 @@ export default function ServicesPage() {
             {/* 2. AGREGAR SERVICIOS */}
             <Card className="border-slate-200 shadow-sm">
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <Package className="h-5 w-5 text-cyan-600" />
+                    <CardTitle className="text-lg lg:text-xl flex items-center gap-2">
+                        <Package className="h-5 w-5 lg:h-6 lg:w-6 text-cyan-600" />
                         Servicios y Prendas
                     </CardTitle>
                     {cart.length > 0 && (
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-sm px-3 py-1">
                             {cart.length} ítem{cart.length !== 1 ? 's' : ''}
                         </Badge>
                     )}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Grid de selección */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {/* Grid de selección - Optimizado para táctil */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
                         {servicesList.map((s) => {
                             const isSelected = tempServiceId === s.id && !isCustomMode;
                             const icon = Object.keys(serviceIcons).find(key => s.name.includes(key)) 
@@ -825,18 +825,18 @@ export default function ServicesPage() {
                                     key={s.id}
                                     onClick={() => { setTempServiceId(s.id); setTempQuantity(''); setIsCustomMode(false); }}
                                     className={`
-                                        flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
+                                        flex flex-col items-center justify-center p-4 lg:p-5 rounded-xl border transition-all duration-200 min-h-[100px] lg:min-h-[120px] active:scale-[0.97]
                                         ${isSelected 
-                                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-1 ring-cyan-200 scale-[1.02]' 
+                                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-2 ring-cyan-200 scale-[1.02]' 
                                             : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-200 hover:bg-slate-50'
                                         }
                                     `}
                                 >
-                                    <div className={`mb-2 p-2 rounded-full ${isSelected ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-500'}`}>
-                                        {icon}
+                                    <div className={`mb-2 p-2.5 lg:p-3 rounded-full ${isSelected ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-500'}`}>
+                                        {React.cloneElement(icon, { className: 'w-5 h-5 lg:w-6 lg:h-6' })}
                                     </div>
-                                    <span className="text-sm font-semibold text-center leading-tight">{s.name}</span>
-                                    <span className="text-[10px] text-slate-400 mt-1">${s.price}/{s.unit}</span>
+                                    <span className="text-sm lg:text-base font-semibold text-center leading-tight">{s.name}</span>
+                                    <span className="text-xs lg:text-sm text-slate-400 mt-1">${s.price}/{s.unit}</span>
                                 </button>
                             );
                         })}
@@ -844,58 +844,58 @@ export default function ServicesPage() {
                         <button
                             onClick={() => { setIsCustomMode(true); setTempServiceId(''); setTempQuantity(''); }}
                             className={`
-                                flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
+                                flex flex-col items-center justify-center p-4 lg:p-5 rounded-xl border transition-all duration-200 min-h-[100px] lg:min-h-[120px] active:scale-[0.97]
                                 ${isCustomMode 
-                                    ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-1 ring-cyan-200 scale-[1.02]' 
+                                    ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-2 ring-cyan-200 scale-[1.02]' 
                                     : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-200 hover:bg-slate-50'
                                 }
                             `}
                         >
-                             <div className={`mb-2 p-2 rounded-full ${isCustomMode ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-500'}`}>
-                                <PenTool className="w-5 h-5" />
+                             <div className={`mb-2 p-2.5 lg:p-3 rounded-full ${isCustomMode ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-500'}`}>
+                                <PenTool className="w-5 h-5 lg:w-6 lg:h-6" />
                             </div>
-                            <span className="text-sm font-semibold text-center leading-tight">Otro / Manual</span>
-                            <span className="text-[10px] text-slate-400 mt-1">Personalizado</span>
+                            <span className="text-sm lg:text-base font-semibold text-center leading-tight">Otro / Manual</span>
+                            <span className="text-xs lg:text-sm text-slate-400 mt-1">Personalizado</span>
                         </button>
                     </div>
 
-                    {/* Area de Input (Dinámica) */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all">
+                    {/* Area de Input (Dinámica) - Optimizado para POS táctil */}
+                    <div className="bg-slate-50 p-4 lg:p-5 rounded-xl border border-slate-100 transition-all">
                         {isCustomMode ? (
                             // --- MODO PERSONALIZADO ---
-                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4">
+                            <div className="space-y-4 lg:space-y-5 animate-in fade-in slide-in-from-left-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-slate-600">Nombre del Servicio</Label>
+                                        <Label className="text-slate-600 text-sm lg:text-base">Nombre del Servicio</Label>
                                         <Input 
                                             placeholder="Ej: Lavado de Alfombra" 
-                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                            className="h-12 lg:h-14 rounded-xl border-slate-200 bg-white text-base lg:text-lg"
                                             value={customName}
                                             onChange={(e) => setCustomName(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-slate-600">Precio Unitario</Label>
+                                        <Label className="text-slate-600 text-sm lg:text-base">Precio Unitario</Label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">$</span>
                                             <Input 
                                                 type="number" 
                                                 placeholder="0.00" 
-                                                className="pl-7 h-11 rounded-xl border-slate-200 bg-white"
+                                                className="pl-9 h-12 lg:h-14 rounded-xl border-slate-200 bg-white text-base lg:text-lg"
                                                 value={customPrice}
                                                 onChange={(e) => setCustomPrice(e.target.value)}
                                             />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-end gap-3">
+                                <div className="flex items-end gap-3 lg:gap-4">
                                      <div className="w-1/3 space-y-2">
-                                        <Label className="text-slate-600">Unidad</Label>
+                                        <Label className="text-slate-600 text-sm lg:text-base">Unidad</Label>
                                         <Select value={customUnit} onValueChange={(v: any) => setCustomUnit(v)}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="h-12 lg:h-14 rounded-xl bg-white border-slate-200 text-base"><SelectValue /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="kg">Kilos</SelectItem>
-                                                <SelectItem value="pieces">Piezas</SelectItem>
+                                                <SelectItem value="kg" className="py-3 text-base">Kilos</SelectItem>
+                                                <SelectItem value="pieces" className="py-3 text-base">Piezas</SelectItem>
                                             </SelectContent>
                                         </Select>
                                      </div>
@@ -906,20 +906,20 @@ export default function ServicesPage() {
                                             onChange={setTempQuantity}
                                             unit={customUnit}
                                             placeholder="0"
-                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                            className="h-12 lg:h-14 rounded-xl border-slate-200 bg-white text-lg"
                                         />
                                      </div>
                                      <Button 
-                                        className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md"
+                                        className="h-12 lg:h-14 px-6 lg:px-8 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md text-base active:scale-[0.97]"
                                         onClick={handleAddToCart}
                                     >
-                                        <Plus className="mr-2 h-4 w-4" /> Agregar
+                                        <Plus className="mr-2 h-5 w-5" /> Agregar
                                     </Button>
                                 </div>
                             </div>
                         ) : (
                             // --- MODO ESTÁNDAR ---
-                            <div className="flex items-end gap-3 animate-in fade-in">
+                            <div className="flex items-end gap-3 lg:gap-4 animate-in fade-in">
                                 <div className="flex-1 space-y-2">
                                     <ScaleInput
                                         label={tempService ? `Cantidad de ${tempService.name}` : 'Selecciona un servicio arriba'}
@@ -928,45 +928,45 @@ export default function ServicesPage() {
                                         unit={tempService?.unit || 'kg'}
                                         placeholder="0"
                                         disabled={!tempService}
-                                        className="h-11 rounded-xl border-slate-200 pl-4 text-lg font-medium bg-white"
+                                        className="h-12 lg:h-14 rounded-xl border-slate-200 pl-4 text-lg lg:text-xl font-medium bg-white"
                                     />
                                 </div>
                                 <Button 
-                                    className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 disabled:opacity-50"
+                                    className="h-12 lg:h-14 px-6 lg:px-8 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 disabled:opacity-50 text-base active:scale-[0.97]"
                                     onClick={handleAddToCart}
                                     disabled={!tempService || !tempQuantity}
                                 >
-                                    <Plus className="mr-2 h-4 w-4" /> Agregar
+                                    <Plus className="mr-2 h-5 w-5" /> Agregar
                                 </Button>
                             </div>
                         )}
                     </div>
 
-                    {/* Lista de ítems en el carrito */}
+                    {/* Lista de ítems en el carrito - Optimizado para táctil */}
                     {cart.length > 0 ? (
                         <div className="space-y-3">
-                            <Label className="text-slate-600">Servicios Agregados</Label>
+                            <Label className="text-slate-600 text-sm lg:text-base">Servicios Agregados</Label>
                             <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
                                 {cart.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center p-3 bg-white hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${item.isCustom ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>
-                                                {item.isCustom ? <PenTool className="w-4 h-4" /> : 
+                                    <div key={index} className="flex justify-between items-center p-4 lg:p-5 bg-white hover:bg-slate-50 transition-colors min-h-[70px]">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex items-center justify-center ${item.isCustom ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>
+                                                {item.isCustom ? <PenTool className="w-5 h-5 lg:w-6 lg:h-6" /> : 
                                                  (Object.keys(serviceIcons).find(key => item.serviceName.includes(key)) 
                                                     ? serviceIcons[Object.keys(serviceIcons).find(key => item.serviceName.includes(key))!] 
                                                     : serviceIcons['default'])}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-slate-800 text-sm">{item.serviceName} {item.isCustom && <span className="text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-100">Manual</span>}</p>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="font-medium text-slate-800 text-sm lg:text-base">{item.serviceName} {item.isCustom && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Manual</span>}</p>
+                                                <p className="text-xs lg:text-sm text-slate-500">
                                                     {item.quantity} {item.unit === 'kg' ? 'kg' : 'pza'} x ${item.priceUnit}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className="font-semibold text-slate-700 text-sm">${item.subtotal.toFixed(2)}</span>
-                                            <button onClick={() => handleRemoveFromCart(index)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                                <Trash2 className="h-4 w-4" />
+                                        <div className="flex items-center gap-4 lg:gap-5">
+                                            <span className="font-semibold text-slate-700 text-base lg:text-lg">${item.subtotal.toFixed(2)}</span>
+                                            <button onClick={() => handleRemoveFromCart(index)} className="text-slate-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
+                                                <Trash2 className="h-5 w-5" />
                                             </button>
                                         </div>
                                     </div>
@@ -974,17 +974,17 @@ export default function ServicesPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-xl">
-                            <ShoppingBasket className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                            <p className="text-sm text-slate-400">Aún no has agregado servicios al pedido.</p>
+                        <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl">
+                            <ShoppingBasket className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm lg:text-base text-slate-400">Aún no has agregado servicios al pedido.</p>
                         </div>
                     )}
 
                     <div className="space-y-2 pt-2">
-                        <Label className="text-slate-600">Notas del Pedido</Label>
+                        <Label className="text-slate-600 text-sm lg:text-base">Notas del Pedido</Label>
                         <Textarea
                             placeholder="Manchas, prendas delicadas, instrucciones especiales..."
-                            className="rounded-xl border-slate-200 bg-slate-50/50 min-h-[80px]"
+                            className="rounded-xl border-slate-200 bg-slate-50/50 min-h-[90px] lg:min-h-[100px] text-base"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                         />
@@ -995,25 +995,25 @@ export default function ServicesPage() {
             {/* 3. LOGÍSTICA */}
             <Card className="border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <CalendarIcon className="h-5 w-5 text-cyan-600" />
+                    <CardTitle className="text-lg lg:text-xl flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6 text-cyan-600" />
                         Logística de Entrega
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                         <div className="space-y-2">
-                            <Label className="text-slate-600">Fecha de Entrega</Label>
+                            <Label className="text-slate-600 text-sm lg:text-base">Fecha de Entrega</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
                                         variant={"outline"}
                                         className={cn(
-                                            "w-full h-11 justify-start text-left font-normal rounded-xl border-slate-200",
+                                            "w-full h-12 lg:h-14 justify-start text-left font-normal rounded-xl border-slate-200 text-base",
                                             !deliveryDate && "text-muted-foreground"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        <CalendarIcon className="mr-3 h-5 w-5" />
                                         {deliveryDate ? format(deliveryDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
@@ -1030,12 +1030,12 @@ export default function ServicesPage() {
                             </Popover>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-slate-600">Hora Estimada</Label>
+                            <Label className="text-slate-600 text-sm lg:text-base">Hora Estimada</Label>
                             <div className="relative">
-                                <Clock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                                 <Input 
                                     type="time" 
-                                    className="pl-10 h-11 rounded-xl border-slate-200 block" 
+                                    className="pl-12 h-12 lg:h-14 rounded-xl border-slate-200 block text-base" 
                                     value={deliveryTime}
                                     onChange={(e) => setDeliveryTime(e.target.value)}
                                 />
@@ -1046,58 +1046,58 @@ export default function ServicesPage() {
             </Card>
         </div>
 
-        {/* COLUMNA DERECHA: RESUMEN Y PAGO */}
+        {/* COLUMNA DERECHA: RESUMEN Y PAGO - Optimizada para POS */}
         <div className="lg:col-span-4 space-y-6">
             <Card className="border-slate-200 shadow-md bg-white sticky top-4 overflow-hidden">
                 <div className="h-2 bg-gradient-to-r from-cyan-400 to-blue-500 w-full" />
                 <CardHeader>
-                    <CardTitle className="text-slate-800">Resumen del Pedido</CardTitle>
+                    <CardTitle className="text-slate-800 text-lg lg:text-xl">Resumen del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div className="bg-slate-50 p-5 lg:p-6 rounded-2xl border border-slate-100">
                         {cart.length > 0 ? (
-                            <div className="space-y-2 mb-4">
+                            <div className="space-y-3 mb-4">
                                 {cart.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm">
-                                        <span className="text-slate-600 truncate max-w-[150px]">{item.serviceName} <span className="text-xs text-slate-400">x{item.quantity}</span></span>
+                                    <div key={idx} className="flex justify-between text-sm lg:text-base">
+                                        <span className="text-slate-600 truncate max-w-[160px]">{item.serviceName} <span className="text-xs lg:text-sm text-slate-400">x{item.quantity}</span></span>
                                         <span className="font-medium text-slate-700">${item.subtotal.toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-center text-sm text-slate-400 mb-4">Agrega servicios para ver el costo</p>
+                            <p className="text-center text-sm lg:text-base text-slate-400 mb-4">Agrega servicios para ver el costo</p>
                         )}
                         
-                        <div className="h-px bg-slate-200 my-2" />
+                        <div className="h-px bg-slate-200 my-3" />
                         <div className="flex justify-between items-end">
-                            <span className="text-slate-800 font-bold pb-1">Total</span>
-                            <span className="text-3xl font-bold text-cyan-600">${cartTotal}</span>
+                            <span className="text-slate-800 font-bold pb-1 text-base lg:text-lg">Total</span>
+                            <span className="text-3xl lg:text-4xl font-bold text-cyan-600">${cartTotal}</span>
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <Label className="text-slate-600">Método de Pago</Label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <Label className="text-slate-600 text-sm lg:text-base">Método de Pago</Label>
+                        <div className="grid grid-cols-2 gap-3">
                             {[
-                                { id: 'efectivo', icon: <Banknote className="h-5 w-5" />, label: 'Efectivo' },
-                                { id: 'terminal', icon: <CreditCard className="h-5 w-5" />, label: 'Tarjeta' },
-                                { id: 'transferencia', icon: <Smartphone className="h-5 w-5" />, label: 'Transfer' },
-                                { id: 'pagar_al_retiro', icon: <Clock className="h-5 w-5" />, label: 'Pendiente' },
+                                { id: 'efectivo', icon: <Banknote className="h-6 w-6" />, label: 'Efectivo' },
+                                { id: 'terminal', icon: <CreditCard className="h-6 w-6" />, label: 'Tarjeta' },
+                                { id: 'transferencia', icon: <Smartphone className="h-6 w-6" />, label: 'Transfer' },
+                                { id: 'pagar_al_retiro', icon: <Clock className="h-6 w-6" />, label: 'Pendiente' },
                             ].map((method) => (
                                 <button
                                     key={method.id}
                                     type="button"
                                     onClick={() => setPaymentMethod(method.id)}
                                     className={`
-                                        flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all
+                                        flex flex-col items-center justify-center gap-2 p-4 lg:p-5 rounded-xl border transition-all min-h-[80px] lg:min-h-[90px] active:scale-[0.97]
                                         ${paymentMethod === method.id 
-                                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-1 ring-cyan-200' 
+                                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 shadow-sm ring-2 ring-cyan-200' 
                                             : 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                                         }
                                     `}
                                 >
                                     {method.icon}
-                                    <span className="text-xs font-semibold">{method.label}</span>
+                                    <span className="text-sm lg:text-base font-semibold">{method.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -1105,7 +1105,7 @@ export default function ServicesPage() {
 
                     <Button 
                         size="lg" 
-                        className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200 font-bold text-lg h-12 transition-all hover:scale-[1.02]"
+                        className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg shadow-cyan-200 font-bold text-lg lg:text-xl h-14 lg:h-16 transition-all hover:scale-[1.02] active:scale-[0.98]"
                         onClick={() => {
                             if (!selectedClient) { toast({title: "Falta Cliente", description: "Selecciona un cliente.", variant: "destructive"}); return; }
                             if (cart.length === 0) { toast({title: "Carrito vacío", description: "Agrega al menos un servicio.", variant: "destructive"}); return; }
@@ -1122,32 +1122,32 @@ export default function ServicesPage() {
 
       {/* --- MODALES --- */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-md">
+        <DialogContent className="rounded-2xl sm:max-w-lg">
             <DialogHeader>
-                <DialogTitle>Registrar Nuevo Cliente</DialogTitle>
-                <DialogDescription>Se creará el usuario y se asignará al pedido actual.</DialogDescription>
+                <DialogTitle className="text-xl lg:text-2xl">Registrar Nuevo Cliente</DialogTitle>
+                <DialogDescription className="text-base">Se creará el usuario y se asignará al pedido actual.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-2">
+            <div className="space-y-5 py-3">
                 <div className="space-y-2">
-                    <Label>Nombre Completo</Label>
-                    <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Ej. Juan Pérez" className="rounded-xl" />
+                    <Label className="text-base">Nombre Completo</Label>
+                    <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Ej. Juan Pérez" className="rounded-xl h-12 lg:h-14 text-base" />
                 </div>
                 <div className="space-y-2">
-                    <Label>Correo (Opcional)</Label>
-                    <Input value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="cliente@email.com" className="rounded-xl" />
+                    <Label className="text-base">Correo (Opcional)</Label>
+                    <Input value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="cliente@email.com" className="rounded-xl h-12 lg:h-14 text-base" />
                 </div>
                 <div className="space-y-2">
-                    <Label>Teléfono (Opcional)</Label>
-                    <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="55 1234 5678" className="rounded-xl" />
+                    <Label className="text-base">Teléfono (Opcional)</Label>
+                    <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="55 1234 5678" className="rounded-xl h-12 lg:h-14 text-base" />
                 </div>
-                <div className="bg-amber-50 text-amber-800 p-3 rounded-xl text-xs flex items-start gap-2 border border-amber-100">
-                    <span className="text-lg">🔑</span>
-                    <p className="mt-0.5">Contraseña temporal automática: <strong className="font-mono bg-white px-1 rounded border border-amber-200">{defaultPass}</strong></p>
+                <div className="bg-amber-50 text-amber-800 p-4 rounded-xl text-sm flex items-start gap-3 border border-amber-100">
+                    <span className="text-xl">🔑</span>
+                    <p className="mt-0.5">Contraseña temporal automática: <strong className="font-mono bg-white px-2 py-0.5 rounded border border-amber-200">{defaultPass}</strong></p>
                 </div>
             </div>
-            <DialogFooter>
-                <Button variant="ghost" onClick={() => setIsAddModalOpen(false)} className="rounded-xl">Cancelar</Button>
-                <Button onClick={handleCreateClient} disabled={creatingClient} className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl">
+            <DialogFooter className="gap-3">
+                <Button variant="ghost" onClick={() => setIsAddModalOpen(false)} className="rounded-xl h-12 px-6 text-base">Cancelar</Button>
+                <Button onClick={handleCreateClient} disabled={creatingClient} className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-12 px-6 text-base">
                     {creatingClient ? 'Guardando...' : 'Registrar Cliente'}
                 </Button>
             </DialogFooter>
@@ -1155,50 +1155,50 @@ export default function ServicesPage() {
       </Dialog>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-md">
+        <DialogContent className="rounded-2xl sm:max-w-lg">
             <DialogHeader>
-                <div className="mx-auto w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mb-2 text-cyan-600">
-                    <CheckCircle2 className="w-6 h-6" />
+                <div className="mx-auto w-14 h-14 bg-cyan-100 rounded-full flex items-center justify-center mb-2 text-cyan-600">
+                    <CheckCircle2 className="w-7 h-7" />
                 </div>
-                <DialogTitle className="text-center text-xl text-slate-800">Confirmar Pedido</DialogTitle>
-                <DialogDescription className="text-center">Verifica los datos antes de generar la orden.</DialogDescription>
+                <DialogTitle className="text-center text-xl lg:text-2xl text-slate-800">Confirmar Pedido</DialogTitle>
+                <DialogDescription className="text-center text-base">Verifica los datos antes de generar la orden.</DialogDescription>
             </DialogHeader>
             
-            <div className="bg-slate-50 p-4 rounded-xl space-y-3 text-sm border border-slate-100 mt-2">
-                <div className="flex justify-between border-b border-slate-200/60 pb-2">
+            <div className="bg-slate-50 p-5 rounded-xl space-y-4 text-sm lg:text-base border border-slate-100 mt-2">
+                <div className="flex justify-between border-b border-slate-200/60 pb-3">
                     <span className="text-slate-500">Cliente</span>
                     <span className="font-semibold text-slate-800 text-right">{selectedClient?.name}</span>
                 </div>
-                <div className="border-b border-slate-200/60 pb-2">
-                    <span className="text-slate-500 block mb-1">Servicios ({cart.length})</span>
-                    <div className="max-h-20 overflow-y-auto space-y-1">
+                <div className="border-b border-slate-200/60 pb-3">
+                    <span className="text-slate-500 block mb-2">Servicios ({cart.length})</span>
+                    <div className="max-h-24 overflow-y-auto space-y-2">
                         {cart.map((item, i) => (
-                            <div key={i} className="flex justify-between text-xs">
+                            <div key={i} className="flex justify-between text-sm">
                                 <span className="text-slate-700">{item.serviceName} x{item.quantity}</span>
                                 <span className="text-slate-500">${item.subtotal.toFixed(2)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="flex justify-between border-b border-slate-200/60 pb-2">
+                <div className="flex justify-between border-b border-slate-200/60 pb-3">
                     <span className="text-slate-500">Entrega</span>
                     <div className="text-right">
                         <p className="font-medium text-slate-800">{deliveryDate ? format(deliveryDate, 'PPP', {locale: es}) : ''}</p>
-                        <p className="text-xs text-slate-500">{deliveryTime} hrs</p>
+                        <p className="text-sm text-slate-500">{deliveryTime} hrs</p>
                     </div>
                 </div>
-                <div className="flex justify-between items-center pt-1">
+                <div className="flex justify-between items-center pt-2">
                     <span className="text-slate-500 font-medium">Total a Pagar</span>
-                    <span className="font-bold text-cyan-700 text-lg">${cartTotal}</span>
+                    <span className="font-bold text-cyan-700 text-xl lg:text-2xl">${cartTotal}</span>
                 </div>
             </div>
 
             <DialogFooter className="sm:justify-center gap-3 mt-4">
-                <Button variant="outline" onClick={() => setConfirmOpen(false)} className="rounded-xl px-6 w-full sm:w-auto border-slate-200">Corregir</Button>
+                <Button variant="outline" onClick={() => setConfirmOpen(false)} className="rounded-xl px-6 h-12 w-full sm:w-auto border-slate-200 text-base">Corregir</Button>
                 <Button 
                     onClick={handleCreateOrder} 
                     disabled={processingOrder}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl px-8 w-full sm:w-auto shadow-md shadow-cyan-200"
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl px-8 h-12 w-full sm:w-auto shadow-md shadow-cyan-200 text-base"
                 >
                     {processingOrder ? 'Procesando...' : 'Confirmar Orden'}
                 </Button>
@@ -1206,19 +1206,19 @@ export default function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Recibo - Impresión Térmica */}
+      {/* Modal de Recibo - Optimizado para POS */}
       <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent className="rounded-2xl sm:max-w-sm">
+        <DialogContent className="rounded-2xl sm:max-w-md">
             <DialogHeader>
-                <div className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-2 text-green-600">
-                    <CheckCircle2 className="w-8 h-8" />
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3 text-green-600">
+                    <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <DialogTitle className="text-center text-xl text-slate-800">¡Pedido Creado!</DialogTitle>
-                <DialogDescription className="text-center">Orden #{lastOrder?.orderId} registrada exitosamente</DialogDescription>
+                <DialogTitle className="text-center text-xl lg:text-2xl text-slate-800">¡Pedido Creado!</DialogTitle>
+                <DialogDescription className="text-center text-base">Orden #{lastOrder?.orderId} registrada exitosamente</DialogDescription>
             </DialogHeader>
             
             {lastOrder && (
-              <div className="bg-slate-50 p-4 rounded-xl space-y-2 text-sm border border-slate-100 mt-2">
+              <div className="bg-slate-50 p-5 rounded-xl space-y-3 text-sm lg:text-base border border-slate-100 mt-2">
                   <div className="flex justify-between">
                       <span className="text-slate-500">Cliente</span>
                       <span className="font-semibold text-slate-800">{lastOrder.clientName}</span>
@@ -1234,23 +1234,23 @@ export default function ServicesPage() {
                   <div className="h-px bg-slate-200 my-2" />
                   <div className="flex justify-between items-center">
                       <span className="font-bold text-slate-700">Total</span>
-                      <span className="font-bold text-cyan-700 text-lg">${lastOrder.total}</span>
+                      <span className="font-bold text-cyan-700 text-xl lg:text-2xl">${lastOrder.total}</span>
                   </div>
               </div>
             )}
 
-            <DialogFooter className="flex-col gap-2 mt-4">
+            <DialogFooter className="flex-col gap-3 mt-4">
                 <Button 
                     onClick={handlePrintReceipt}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-12 shadow-md shadow-cyan-200 flex items-center justify-center gap-2"
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-14 shadow-md shadow-cyan-200 flex items-center justify-center gap-2 text-base active:scale-[0.98]"
                 >
-                    <Printer className="w-5 h-5" />
+                    <Printer className="w-6 h-6" />
                     Imprimir Recibo
                 </Button>
                 <Button 
                     variant="outline" 
                     onClick={() => setReceiptOpen(false)} 
-                    className="w-full rounded-xl border-slate-200"
+                    className="w-full rounded-xl h-12 border-slate-200 text-base"
                 >
                     Cerrar
                 </Button>

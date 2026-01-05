@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScaleInput } from '@/components/scale-input';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, onSnapshot, orderBy, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -759,7 +760,7 @@ export default function StaffDashboard() {
 
   // --- Componentes ---
 
-  // Tarjeta de estado mejorada con animaciones
+  // Tarjeta de estado mejorada con animaciones - Optimizada para táctil
   const StatusCard = ({ id, label, count, icon: Icon, colorClass }: any) => {
       const isActive = statusFilter === id;
       const colorMap: Record<string, string> = {
@@ -785,69 +786,69 @@ export default function StaffDashboard() {
           <button 
             onClick={() => setStatusFilter(statusFilter === id ? 'all' : id)}
             className={cn(
-                "flex flex-col items-start p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] w-full text-left relative overflow-hidden group",
+                "flex flex-col items-start p-4 lg:p-5 rounded-xl lg:rounded-2xl border-2 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] w-full text-left relative overflow-hidden group min-h-[100px] lg:min-h-[120px]",
                 "bg-white border-slate-200",
                 colorMap[colorClass]
             )}
           >
-              <div className={cn("p-2.5 rounded-xl mb-3 transition-all duration-300", iconBgMap[colorClass])}>
-                  <Icon className="w-5 h-5" />
+              <div className={cn("p-2 lg:p-2.5 rounded-lg lg:rounded-xl mb-2 lg:mb-3 transition-all duration-300", iconBgMap[colorClass])}>
+                  <Icon className="w-5 h-5 lg:w-6 lg:h-6" />
               </div>
-              <div className={cn("text-3xl font-black transition-colors", isActive ? 'text-slate-900' : 'text-slate-700')}>{count}</div>
-              <div className={cn("text-sm font-semibold transition-colors", isActive ? 'text-slate-700' : 'text-slate-500')}>{label}</div>
+              <div className={cn("text-2xl lg:text-3xl xl:text-4xl font-black transition-colors", isActive ? 'text-slate-900' : 'text-slate-700')}>{count}</div>
+              <div className={cn("text-sm lg:text-base font-semibold transition-colors", isActive ? 'text-slate-700' : 'text-slate-500')}>{label}</div>
               {isActive && (
-                <div className={cn("absolute bottom-0 left-0 w-full h-1.5 transition-all", barColorMap[colorClass])} />
+                <div className={cn("absolute bottom-0 left-0 w-full h-1 lg:h-1.5 transition-all", barColorMap[colorClass])} />
               )}
               {count > 0 && !isActive && (
-                <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                <div className="absolute top-3 right-3 w-2.5 h-2.5 lg:w-3 lg:h-3 rounded-full bg-cyan-400 animate-pulse" />
               )}
           </button>
       );
   };
 
   return (
-    <div className="min-h-screen font-sans p-4 md:p-8 relative">
-        <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen font-sans p-3 md:p-6 lg:p-8 relative pos-mode">
+        <div className="max-w-[1800px] mx-auto space-y-4 lg:space-y-6">
             
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+            {/* Header - Compacto en pantallas grandes */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-white drop-shadow-md">Panel del Personal</h1>
-                    <p className="text-cyan-50 font-medium text-lg opacity-90">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-white drop-shadow-md">Panel del Personal</h1>
+                    <p className="text-cyan-50 font-medium text-base lg:text-lg opacity-90">
                         Hola, {staffName || 'Colaborador'}. Aquí está el resumen de hoy.
                     </p>
                 </div>
             </div>
 
-            {/* Filtros */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Filtros - Grid optimizado para 1920px */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                 <StatusCard id="pendiente" label="Pendientes" count={counts.pendiente} icon={Clock} colorClass="orange" />
                 <StatusCard id="en_progreso" label="En Proceso" count={counts.en_progreso} icon={PlayCircle} colorClass="blue" />
                 <StatusCard id="completado" label="Listos" count={counts.completado} icon={CheckCircle} colorClass="green" />
                 <StatusCard id="entregado" label="Entregados" count={counts.entregado} icon={PackageCheck} colorClass="slate" />
             </div>
 
-            {/* Tabla */}
-            <Card className="border-0 shadow-xl overflow-hidden rounded-3xl">
-                <CardHeader className="bg-white border-b border-slate-100 pb-4 pt-6 px-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            {/* Tabla - Optimizada para táctil */}
+            <Card className="border-0 shadow-xl overflow-hidden rounded-2xl lg:rounded-3xl">
+                <CardHeader className="bg-white border-b border-slate-100 pb-3 pt-4 lg:pb-4 lg:pt-6 px-4 lg:px-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 lg:gap-4">
                         <div>
-                            <CardTitle className="text-xl text-slate-800">Ordenes de Servicio</CardTitle>
-                            <CardDescription>Gestión de flujo de trabajo</CardDescription>
+                            <CardTitle className="text-lg lg:text-xl text-slate-800">Ordenes de Servicio</CardTitle>
+                            <CardDescription className="text-sm">Gestión de flujo de trabajo</CardDescription>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <div className="relative w-full sm:w-64 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
+                            <div className="relative w-full sm:w-72 lg:w-80 group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
                                 <Input 
                                     placeholder="Buscar pedido..." 
-                                    className="pl-9 h-10 rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-all focus-visible:ring-cyan-500"
+                                    className="pl-10 h-12 text-base rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-all focus-visible:ring-cyan-500"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                             {statusFilter !== 'all' && (
-                                <Button variant="ghost" size="sm" onClick={() => setStatusFilter('all')} className="text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                                    <X className="h-4 w-4 mr-1" /> Limpiar
+                                <Button variant="ghost" size="sm" onClick={() => setStatusFilter('all')} className="h-12 px-4 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                                    <X className="h-5 w-5 mr-1" /> Limpiar
                                 </Button>
                             )}
                         </div>
@@ -857,11 +858,11 @@ export default function StaffDashboard() {
                     <Table>
                         <TableHeader className="bg-slate-50/80">
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="pl-6 font-semibold text-slate-600">Cliente</TableHead>
-                                <TableHead className="font-semibold text-slate-600 hidden md:table-cell">Servicio</TableHead>
-                                <TableHead className="font-semibold text-slate-600 hidden sm:table-cell">Entrega</TableHead>
-                                <TableHead className="font-semibold text-slate-600">Total</TableHead>
-                                <TableHead className="text-right pr-6 font-semibold text-slate-600">Acción Rápida</TableHead>
+                                <TableHead className="pl-4 lg:pl-6 font-semibold text-slate-600 text-sm lg:text-base">Cliente</TableHead>
+                                <TableHead className="font-semibold text-slate-600 hidden lg:table-cell text-sm lg:text-base">Servicio</TableHead>
+                                <TableHead className="font-semibold text-slate-600 hidden md:table-cell text-sm lg:text-base">Entrega</TableHead>
+                                <TableHead className="font-semibold text-slate-600 text-sm lg:text-base">Total</TableHead>
+                                <TableHead className="text-right pr-4 lg:pr-6 font-semibold text-slate-600 text-sm lg:text-base">Acción</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -890,13 +891,13 @@ export default function StaffDashboard() {
                                         <TableRow 
                                             key={order.id} 
                                             className={cn(
-                                                "group transition-all duration-200 border-b border-slate-100",
+                                                "group transition-all duration-200 border-b border-slate-100 min-h-[60px] lg:min-h-[72px]",
                                                 isProcessing ? "bg-cyan-50/50" : "hover:bg-gradient-to-r hover:from-cyan-50/40 hover:to-transparent",
                                                 expandedOrder === order.id && "bg-slate-50"
                                             )}
                                         >
-                                            <TableCell className="pl-6 py-3">
-                                                <div className="flex items-center gap-3">
+                                            <TableCell className="pl-4 lg:pl-6 py-3 lg:py-4">
+                                                <div className="flex items-center gap-2 lg:gap-3">
                                                     {/* Indicador de estado con color */}
                                                     <div className={cn(
                                                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all",
@@ -952,24 +953,24 @@ export default function StaffDashboard() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right pr-4">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {/* Botón de acción principal grande */}
+                                                <div className="flex items-center justify-end gap-2 lg:gap-3">
+                                                    {/* Botón de acción principal grande - Optimizado para táctil */}
                                                     {order.status !== 'entregado' && NextIcon && (
                                                         <Button 
                                                             onClick={() => handleQuickStatusChange(order)}
                                                             disabled={isProcessing}
                                                             className={cn(
-                                                                "h-10 px-4 rounded-xl font-bold text-sm gap-2 transition-all shadow-md hover:shadow-lg active:scale-95",
+                                                                "h-11 lg:h-12 px-4 lg:px-5 rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base gap-2 transition-all shadow-md hover:shadow-lg active:scale-95",
                                                                 order.status === 'pendiente' && "bg-blue-500 hover:bg-blue-600 text-white",
                                                                 order.status === 'en_progreso' && "bg-green-500 hover:bg-green-600 text-white",
                                                                 order.status === 'completado' && "bg-purple-500 hover:bg-purple-600 text-white",
                                                             )}
                                                         >
                                                             {isProcessing ? (
-                                                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                                                <RefreshCw className="w-5 h-5 animate-spin" />
                                                             ) : (
                                                                 <>
-                                                                    <NextIcon className="w-4 h-4" />
+                                                                    <NextIcon className="w-5 h-5" />
                                                                     <span className="hidden sm:inline">{statusConfig?.nextLabel}</span>
                                                                 </>
                                                             )}
@@ -977,19 +978,19 @@ export default function StaffDashboard() {
                                                     )}
                                                     
                                                     {order.status === 'entregado' && (
-                                                        <Badge className="bg-slate-100 text-slate-500 px-3 py-1.5 text-xs">
-                                                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Completado
+                                                        <Badge className="bg-slate-100 text-slate-500 px-4 py-2 text-sm lg:text-base">
+                                                            <CheckCircle className="w-4 h-4 mr-1" /> Completado
                                                         </Badge>
                                                     )}
                                                     
-                                                    {/* Botones secundarios */}
-                                                    <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    {/* Botones secundarios - Más grandes para táctil */}
+                                                    <div className="flex gap-1 lg:gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                                         {order.status !== 'entregado' && (
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" onClick={() => openEditModal(order)}>
-                                                                            <Pencil className="h-4 w-4" />
+                                                                        <Button size="icon" variant="ghost" className="h-10 w-10 lg:h-11 lg:w-11 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl" onClick={() => openEditModal(order)}>
+                                                                            <Pencil className="h-5 w-5" />
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent side="bottom">Editar</TooltipContent>
@@ -999,8 +1000,8 @@ export default function StaffDashboard() {
                                                         <TooltipProvider>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-400 hover:text-cyan-500 hover:bg-cyan-50 rounded-lg" onClick={() => { setDetailsTarget(order); setDetailsModalOpen(true); }}>
-                                                                        <Eye className="h-4 w-4" />
+                                                                    <Button size="icon" variant="ghost" className="h-10 w-10 lg:h-11 lg:w-11 text-slate-400 hover:text-cyan-500 hover:bg-cyan-50 rounded-xl" onClick={() => { setDetailsTarget(order); setDetailsModalOpen(true); }}>
+                                                                        <Eye className="h-5 w-5" />
                                                                     </Button>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent side="bottom">Ver detalles</TooltipContent>
@@ -1019,53 +1020,53 @@ export default function StaffDashboard() {
             </Card>
         </div>
 
-        {/* MODAL: APERTURA DE CAJA */}
+        {/* MODAL: APERTURA DE CAJA - Optimizado para táctil */}
         <Dialog open={showModal} onOpenChange={(open) => { if(!open) return; setShowModal(open); }}>
-            <DialogContent className="rounded-2xl sm:max-w-sm [&>button]:hidden" onPointerDownOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+            <DialogContent className="rounded-2xl sm:max-w-md [&>button]:hidden" onPointerDownOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
                 <DialogHeader>
-                    <div className="mx-auto w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mb-2 text-cyan-600"><Banknote className="h-6 w-6" /></div>
-                    <DialogTitle className="text-center text-xl text-slate-800">Apertura de Caja</DialogTitle>
-                    <DialogDescription className="text-center">Ingresa el monto inicial para comenzar.</DialogDescription>
+                    <div className="mx-auto w-14 h-14 bg-cyan-100 rounded-full flex items-center justify-center mb-2 text-cyan-600"><Banknote className="h-7 w-7" /></div>
+                    <DialogTitle className="text-center text-xl lg:text-2xl text-slate-800">Apertura de Caja</DialogTitle>
+                    <DialogDescription className="text-center text-base">Ingresa el monto inicial para comenzar.</DialogDescription>
                 </DialogHeader>
-                <div className="py-4 flex justify-center">
-                    <div className="relative w-full max-w-[200px]">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
-                        <Input type="number" step="0.01" className="pl-7 text-center text-2xl font-bold h-14 rounded-xl border-slate-200 focus-visible:ring-cyan-500" value={openingAmount} onChange={(e) => setOpeningAmount(e.target.value)} placeholder="0.00" />
+                <div className="py-6 flex justify-center">
+                    <div className="relative w-full max-w-[220px]">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-lg">$</span>
+                        <Input type="number" step="0.01" className="pl-9 text-center text-3xl font-bold h-16 rounded-xl border-slate-200 focus-visible:ring-cyan-500" value={openingAmount} onChange={(e) => setOpeningAmount(e.target.value)} placeholder="0.00" />
                     </div>
                 </div>
-                <DialogFooter className="sm:justify-center"><Button onClick={saveOpening} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-11">Confirmar Apertura</Button></DialogFooter>
+                <DialogFooter className="sm:justify-center"><Button onClick={saveOpening} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl h-14 text-lg font-bold">Confirmar Apertura</Button></DialogFooter>
             </DialogContent>
         </Dialog>
 
-        {/* MODAL: ENTREGAR PEDIDO - Versión Rápida */}
+        {/* MODAL: ENTREGAR PEDIDO - Optimizado para táctil POS */}
         <Dialog open={deliverModalOpen} onOpenChange={setDeliverModalOpen}>
-            <DialogContent className="rounded-3xl sm:max-w-md overflow-hidden p-0">
+            <DialogContent className="rounded-3xl sm:max-w-lg overflow-hidden p-0">
                 {/* Header con gradiente */}
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-6 text-white text-center">
-                    <div className="mx-auto bg-white/20 backdrop-blur p-3 rounded-2xl w-fit mb-3">
-                        <PackageCheck className="h-8 w-8" />
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-6 lg:p-8 text-white text-center">
+                    <div className="mx-auto bg-white/20 backdrop-blur p-4 rounded-2xl w-fit mb-3">
+                        <PackageCheck className="h-10 w-10" />
                     </div>
-                    <DialogTitle className="text-2xl font-bold">Entregar Pedido</DialogTitle>
-                    <p className="text-green-100 mt-1">{deliverTarget?.clientName}</p>
+                    <DialogTitle className="text-2xl lg:text-3xl font-bold">Entregar Pedido</DialogTitle>
+                    <p className="text-green-100 mt-1 text-lg">{deliverTarget?.clientName}</p>
                 </div>
                 
-                <div className="p-6 space-y-4">
+                <div className="p-6 lg:p-8 space-y-5">
                     {/* Total prominente */}
-                    <div className="bg-slate-50 rounded-2xl p-4 text-center border-2 border-slate-100">
-                        <span className="text-sm text-slate-500 font-medium block mb-1">Total a Cobrar</span>
-                        <span className="text-4xl font-black text-slate-800">${amountDue.toFixed(2)}</span>
+                    <div className="bg-slate-50 rounded-2xl p-5 text-center border-2 border-slate-100">
+                        <span className="text-sm lg:text-base text-slate-500 font-medium block mb-1">Total a Cobrar</span>
+                        <span className="text-4xl lg:text-5xl font-black text-slate-800">${amountDue.toFixed(2)}</span>
                     </div>
                     
                     {deliverTarget?.paymentMethod === 'pagar_al_retiro' ? (
-                        <div className="space-y-4">
-                            {/* Botones de monto rápido */}
-                            <div className="grid grid-cols-4 gap-2">
+                        <div className="space-y-5">
+                            {/* Botones de monto rápido - Más grandes para táctil */}
+                            <div className="grid grid-cols-4 gap-3">
                                 {[20, 50, 100, 200].map(amount => (
                                     <button
                                         key={amount}
                                         onClick={() => setPayAmount(String(amount))}
                                         className={cn(
-                                            "py-3 rounded-xl font-bold text-sm transition-all active:scale-95",
+                                            "py-4 rounded-xl font-bold text-base lg:text-lg transition-all active:scale-95",
                                             parseFloat(payAmount) === amount 
                                                 ? "bg-cyan-500 text-white shadow-lg" 
                                                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -1076,12 +1077,12 @@ export default function StaffDashboard() {
                                 ))}
                             </div>
                             
-                            {/* Input de pago */}
+                            {/* Input de pago - Más grande */}
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">$</span>
                                 <Input 
                                     type="number" 
-                                    className="pl-9 h-14 rounded-xl text-2xl font-bold border-2 border-slate-200 text-center focus:border-cyan-400" 
+                                    className="pl-11 h-16 rounded-xl text-3xl font-bold border-2 border-slate-200 text-center focus:border-cyan-400" 
                                     placeholder="0.00" 
                                     value={payAmount} 
                                     onChange={(e) => setPayAmount(e.target.value)}
@@ -1091,42 +1092,42 @@ export default function StaffDashboard() {
                             
                             {/* Cambio */}
                             {parseFloat(payAmount) >= amountDue && (
-                                <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex justify-between items-center animate-in fade-in duration-200">
-                                    <span className="text-green-700 font-semibold flex items-center gap-2">
-                                        <Banknote className="w-5 h-5" /> Cambio:
+                                <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-5 flex justify-between items-center animate-in fade-in duration-200">
+                                    <span className="text-green-700 font-semibold flex items-center gap-2 text-lg">
+                                        <Banknote className="w-6 h-6" /> Cambio:
                                     </span>
-                                    <span className="text-3xl font-black text-green-600">${changeDue.toFixed(2)}</span>
+                                    <span className="text-4xl font-black text-green-600">${changeDue.toFixed(2)}</span>
                                 </div>
                             )}
                         </div>
                     ) : (
-                        <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 text-center">
-                            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                            <p className="font-bold text-green-700 text-lg">¡Ya está pagado!</p>
-                            <p className="text-green-600 text-sm capitalize">{deliverTarget?.paymentMethod?.replace(/_/g, ' ')}</p>
+                        <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-8 text-center">
+                            <CheckCircle2 className="h-14 w-14 text-green-500 mx-auto mb-3" />
+                            <p className="font-bold text-green-700 text-xl">¡Ya está pagado!</p>
+                            <p className="text-green-600 text-base capitalize">{deliverTarget?.paymentMethod?.replace(/_/g, ' ')}</p>
                         </div>
                     )}
                 </div>
                 
-                {/* Footer con botones */}
-                <div className="p-4 bg-slate-50 border-t flex gap-3">
+                {/* Footer con botones - Más grandes */}
+                <div className="p-5 lg:p-6 bg-slate-50 border-t flex gap-4">
                     <Button 
                         variant="outline" 
                         onClick={() => { setDeliverModalOpen(false); setDeliverTarget(null); setPayAmount(''); }} 
-                        className="flex-1 h-12 rounded-xl font-semibold"
+                        className="flex-1 h-14 rounded-xl font-semibold text-base"
                     >
                         Cancelar
                     </Button>
                     <Button 
                         onClick={markDelivered} 
                         disabled={(deliverTarget?.paymentMethod === 'pagar_al_retiro' && parseFloat(payAmount || '0') < amountDue) || isLoading === deliverTarget?.id}
-                        className="flex-1 h-12 rounded-xl font-bold bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200 gap-2"
+                        className="flex-1 h-14 rounded-xl font-bold text-base bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200 gap-2"
                     >
                         {isLoading === deliverTarget?.id ? (
-                            <RefreshCw className="w-5 h-5 animate-spin" />
+                            <RefreshCw className="w-6 h-6 animate-spin" />
                         ) : (
                             <>
-                                <PackageCheck className="w-5 h-5" />
+                                <PackageCheck className="w-6 h-6" />
                                 Confirmar
                             </>
                         )}
@@ -1135,16 +1136,16 @@ export default function StaffDashboard() {
             </DialogContent>
         </Dialog>
 
-        {/* MODAL: DETALLES COMPLETOS */}
+        {/* MODAL: DETALLES COMPLETOS - Optimizado para POS */}
         <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-            <DialogContent className="rounded-2xl sm:max-w-md overflow-hidden">
+            <DialogContent className="rounded-2xl sm:max-w-lg overflow-hidden">
                 <DialogHeader className="bg-slate-50 p-6 border-b border-slate-100">
                     <div className="flex items-center justify-between">
-                        <DialogTitle className="text-xl text-slate-800">Detalles del Pedido</DialogTitle>
-                        <Badge variant="outline" className="bg-white font-mono">#{detailsTarget?.id.slice(0,5).toUpperCase()}</Badge>
+                        <DialogTitle className="text-xl lg:text-2xl text-slate-800">Detalles del Pedido</DialogTitle>
+                        <Badge variant="outline" className="bg-white font-mono text-base px-3 py-1">#{detailsTarget?.id.slice(0,5).toUpperCase()}</Badge>
                     </div>
                 </DialogHeader>
-                <div className="p-6 space-y-4 text-sm max-h-[60vh] overflow-y-auto">
+                <div className="p-6 space-y-5 text-sm lg:text-base max-h-[60vh] overflow-y-auto">
                     {/* Cliente */}
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                         <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-600"><User className="h-5 w-5" /></div>
@@ -1257,20 +1258,20 @@ export default function StaffDashboard() {
                         </div>
                     )}
                 </div>
-                <DialogFooter className="bg-slate-50 p-4 border-t border-slate-100">
-                    <Button variant="outline" className="w-full rounded-xl" onClick={() => setDetailsModalOpen(false)}>Cerrar</Button>
+                <DialogFooter className="bg-slate-50 p-5 border-t border-slate-100">
+                    <Button variant="outline" className="w-full rounded-xl h-12 text-base" onClick={() => setDetailsModalOpen(false)}>Cerrar</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        {/* MODAL: SELECTOR DE SERVICIOS */}
+        {/* MODAL: SELECTOR DE SERVICIOS - Optimizado para táctil */}
         <Dialog open={showServicePicker} onOpenChange={setShowServicePicker}>
-            <DialogContent className="rounded-2xl sm:max-w-md">
+            <DialogContent className="rounded-2xl sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Agregar Servicio</DialogTitle>
-                    <DialogDescription>Selecciona un servicio existente o crea uno personalizado.</DialogDescription>
+                    <DialogTitle className="text-xl">Agregar Servicio</DialogTitle>
+                    <DialogDescription className="text-base">Selecciona un servicio existente o crea uno personalizado.</DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-2 max-h-[300px] overflow-y-auto">
+                <div className="py-4 space-y-3 max-h-[350px] overflow-y-auto">
                     {servicesList.map((service) => {
                         const alreadyAdded = editItems.some(i => i.serviceId === service.id);
                         return (
@@ -1279,20 +1280,20 @@ export default function StaffDashboard() {
                                 onClick={() => !alreadyAdded && handleSelectService(service)}
                                 disabled={alreadyAdded}
                                 className={cn(
-                                    "w-full p-3 rounded-xl border text-left flex justify-between items-center transition-all",
+                                    "w-full p-4 rounded-xl border text-left flex justify-between items-center transition-all min-h-[60px]",
                                     alreadyAdded 
                                         ? "bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed"
-                                        : "bg-white border-slate-200 hover:border-cyan-400 hover:bg-cyan-50"
+                                        : "bg-white border-slate-200 hover:border-cyan-400 hover:bg-cyan-50 active:scale-[0.98]"
                                 )}
                             >
                                 <div>
-                                    <p className="font-medium text-slate-700">{service.name}</p>
-                                    <p className="text-xs text-slate-400">${service.price.toFixed(2)} / {service.unit}</p>
+                                    <p className="font-medium text-slate-700 text-base">{service.name}</p>
+                                    <p className="text-sm text-slate-400">${service.price.toFixed(2)} / {service.unit}</p>
                                 </div>
                                 {alreadyAdded ? (
-                                    <Badge variant="secondary" className="text-xs">Ya agregado</Badge>
+                                    <Badge variant="secondary" className="text-sm">Ya agregado</Badge>
                                 ) : (
-                                    <Plus className="w-4 h-4 text-cyan-600" />
+                                    <Plus className="w-5 h-5 text-cyan-600" />
                                 )}
                             </button>
                         );
@@ -1302,45 +1303,45 @@ export default function StaffDashboard() {
                     <Button 
                         variant="outline" 
                         onClick={handleAddCustomItem}
-                        className="w-full rounded-xl border-dashed border-slate-300 text-slate-600 hover:text-cyan-700 hover:border-cyan-300"
+                        className="w-full rounded-xl h-12 border-dashed border-slate-300 text-slate-600 hover:text-cyan-700 hover:border-cyan-300 text-base"
                     >
-                        <Plus className="w-4 h-4 mr-2" /> Servicio Personalizado
+                        <Plus className="w-5 h-5 mr-2" /> Servicio Personalizado
                     </Button>
                 </div>
             </DialogContent>
         </Dialog>
 
-        {/* MODAL: EDITAR FECHA/HORA Y CANTIDADES */}
+        {/* MODAL: EDITAR FECHA/HORA Y CANTIDADES - Optimizado para POS táctil */}
         <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-             <DialogContent className="rounded-2xl sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+             <DialogContent className="rounded-2xl sm:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
                  <DialogHeader className="border-b pb-4">
-                     <DialogTitle>Editar Pedido</DialogTitle>
-                     <DialogDescription>Ajusta cantidades, precios y fecha de entrega.</DialogDescription>
+                     <DialogTitle className="text-xl lg:text-2xl">Editar Pedido</DialogTitle>
+                     <DialogDescription className="text-base">Ajusta cantidades, precios y fecha de entrega.</DialogDescription>
                  </DialogHeader>
                  
-                 <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                 <div className="flex-1 overflow-y-auto py-4 lg:py-6 space-y-6">
                      {/* Sección de Items */}
                      <div className="space-y-4">
                          <div className="flex justify-between items-center">
-                             <Label className="text-cyan-700 font-bold">Detalle de Servicios</Label>
-                             <Button size="sm" variant="outline" onClick={handleAddItem} className="h-8 text-xs gap-1 border-cyan-200 text-cyan-700 hover:bg-cyan-50">
-                                 <Plus className="w-3 h-3" /> Agregar
+                             <Label className="text-cyan-700 font-bold text-base">Detalle de Servicios</Label>
+                             <Button size="default" variant="outline" onClick={handleAddItem} className="h-11 text-sm gap-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50">
+                                 <Plus className="w-4 h-4" /> Agregar
                              </Button>
                          </div>
                          
-                         <div className="space-y-3">
+                         <div className="space-y-4">
                              {editItems.map((item, idx) => (
-                                 <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3 relative group">
-                                     <div className="pr-8">
+                                 <div key={idx} className="bg-slate-50 p-4 lg:p-5 rounded-xl border border-slate-200 space-y-4 relative group">
+                                     <div className="pr-10">
                                          {item.isCustom ? (
                                              <Input 
                                                  value={item.serviceName}
                                                  onChange={(e) => handleItemChange(idx, 'serviceName', e.target.value)}
-                                                 className="font-medium border-slate-200 bg-white h-9 text-sm"
+                                                 className="font-medium border-slate-200 bg-white h-12 text-base"
                                                  placeholder="Nombre del servicio"
                                              />
                                          ) : (
-                                             <div className="font-medium text-slate-700 text-sm bg-white h-9 flex items-center px-3 rounded-md border border-slate-200">
+                                             <div className="font-medium text-slate-700 text-base bg-white h-12 flex items-center px-4 rounded-md border border-slate-200">
                                                  {item.serviceName}
                                              </div>
                                          )}
@@ -1348,40 +1349,50 @@ export default function StaffDashboard() {
                                      
                                      <button 
                                          onClick={() => handleRemoveItem(idx)}
-                                         className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors p-1"
+                                         className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
                                      >
-                                         <Trash2 className="w-4 h-4" />
+                                         <Trash2 className="w-5 h-5" />
                                      </button>
                                      
-                                     <div className="flex gap-3 items-end">
-                                         <div className="flex-1 space-y-1">
-                                             <Label className="text-[10px] text-slate-500 uppercase font-bold">Cant.</Label>
-                                             <Input 
-                                                 type="number"
-                                                 value={item.quantity}
-                                                 onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                                 className="h-9 bg-white text-center"
-                                             />
+                                     <div className="flex gap-4 items-end">
+                                         <div className="flex-1 space-y-2">
+                                             <Label className="text-xs text-slate-500 uppercase font-bold">Cant.</Label>
+                                             {item.unit === 'kg' ? (
+                                                 <ScaleInput
+                                                     value={String(item.quantity)}
+                                                     onChange={(val) => handleItemChange(idx, 'quantity', val)}
+                                                     unit="kg"
+                                                     placeholder="0"
+                                                     className="h-12 bg-white text-center text-lg"
+                                                 />
+                                             ) : (
+                                                 <Input 
+                                                     type="number"
+                                                     value={item.quantity}
+                                                     onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                                     className="h-12 bg-white text-center text-lg"
+                                                 />
+                                             )}
                                          </div>
                                          {/* Solo mostrar campo de precio si NO tiene precio (isCustom o priceUnit === 0) */}
                                          {(item.isCustom || item.priceUnit === 0) && (
-                                             <div className="flex-1 space-y-1">
-                                                 <Label className="text-[10px] text-slate-500 uppercase font-bold">Precio Unit.</Label>
+                                             <div className="flex-1 space-y-2">
+                                                 <Label className="text-xs text-slate-500 uppercase font-bold">Precio Unit.</Label>
                                                  <div className="relative">
-                                                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">$</span>
                                                      <Input 
                                                          type="number"
                                                          value={item.priceUnit}
                                                          onChange={(e) => handleItemChange(idx, 'priceUnit', e.target.value)}
-                                                         className="h-9 pl-5 bg-white"
+                                                         className="h-12 pl-7 bg-white text-lg"
                                                          placeholder="0.00"
                                                      />
                                                  </div>
                                              </div>
                                          )}
-                                         <div className="flex-1 space-y-1">
-                                             <Label className="text-[10px] text-slate-500 uppercase font-bold">Subtotal</Label>
-                                             <div className="h-9 flex items-center font-bold text-slate-700 text-sm px-2 bg-slate-100 rounded-md border border-slate-200">
+                                         <div className="flex-1 space-y-2">
+                                             <Label className="text-xs text-slate-500 uppercase font-bold">Subtotal</Label>
+                                             <div className="h-12 flex items-center font-bold text-slate-700 text-lg px-3 bg-slate-100 rounded-md border border-slate-200">
                                                  ${(Number(item.subtotal) || 0).toFixed(2)}
                                              </div>
                                          </div>
@@ -1391,19 +1402,19 @@ export default function StaffDashboard() {
                          </div>
                          
                          {/* Total */}
-                         <div className="flex justify-between items-center pt-3 border-t border-slate-200">
-                             <span className="font-bold text-slate-600">Total a Pagar:</span>
-                             <span className="font-bold text-2xl text-cyan-600">${editTotal.toFixed(2)}</span>
+                         <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                             <span className="font-bold text-slate-600 text-lg">Total a Pagar:</span>
+                             <span className="font-bold text-3xl text-cyan-600">${editTotal.toFixed(2)}</span>
                          </div>
                      </div>
                      
                      {/* Sección de Método de Pago */}
-                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                         <Label className="text-slate-700 font-bold text-xs uppercase">Método de Pago</Label>
+                     <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                         <Label className="text-slate-700 font-bold text-sm uppercase">Método de Pago</Label>
                          <select 
                              value={editPaymentMethod} 
                              onChange={(e) => setEditPaymentMethod(e.target.value)}
-                             className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                             className="w-full h-12 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"
                          >
                              <option value="pagar_al_retiro">Pagar al Retiro (Pendiente)</option>
                              <option value="efectivo">Efectivo</option>
@@ -1413,26 +1424,26 @@ export default function StaffDashboard() {
                      </div>
 
                      {/* Sección de Fecha */}
-                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                         <Label className="text-slate-700 font-bold text-xs uppercase">Fecha de Entrega</Label>
+                     <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                         <Label className="text-slate-700 font-bold text-sm uppercase">Fecha de Entrega</Label>
                          <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-1">
-                                 <Label className="text-xs text-slate-500">Fecha</Label>
+                             <div className="space-y-2">
+                                 <Label className="text-sm text-slate-500">Fecha</Label>
                                  <Input 
                                      type="date" 
                                      value={editDate} 
                                      onChange={(e) => setEditDate(e.target.value)} 
-                                     className="h-9 bg-white rounded-lg" 
+                                     className="h-12 bg-white rounded-lg text-base" 
                                      min={todayStr}
                                  />
                              </div>
-                             <div className="space-y-1">
-                                 <Label className="text-xs text-slate-500">Hora</Label>
+                             <div className="space-y-2">
+                                 <Label className="text-sm text-slate-500">Hora</Label>
                                  <Input 
                                      type="time" 
                                      value={editTime} 
                                      onChange={(e) => setEditTime(e.target.value)} 
-                                     className="h-9 bg-white rounded-lg" 
+                                     className="h-12 bg-white rounded-lg text-base" 
                                      min={editDate === todayStr ? nowTimeStr : undefined}
                                  />
                              </div>
@@ -1440,17 +1451,17 @@ export default function StaffDashboard() {
                      </div>
                  </div>
                  
-                 <DialogFooter className="border-t pt-4 flex-wrap gap-2">
-                     <Button variant="outline" onClick={() => setEditModalOpen(false)} className="rounded-xl">Cancelar</Button>
+                 <DialogFooter className="border-t pt-4 lg:pt-5 flex-wrap gap-3">
+                     <Button variant="outline" onClick={() => setEditModalOpen(false)} className="rounded-xl h-12 px-6 text-base">Cancelar</Button>
                      <Button 
                          variant="outline" 
                          onClick={() => handlePrintReceipt(editTarget)} 
-                         className="rounded-xl border-cyan-200 text-cyan-700 hover:bg-cyan-50 gap-2"
+                         className="rounded-xl h-12 px-6 text-base border-cyan-200 text-cyan-700 hover:bg-cyan-50 gap-2"
                      >
-                         <Printer className="w-4 h-4" /> Imprimir
+                         <Printer className="w-5 h-5" /> Imprimir
                      </Button>
-                     <Button onClick={saveEdit} className="bg-cyan-600 hover:bg-cyan-700 rounded-xl text-white gap-2">
-                         <Save className="w-4 h-4" /> Guardar Cambios
+                     <Button onClick={saveEdit} className="bg-cyan-600 hover:bg-cyan-700 rounded-xl h-12 px-6 text-base text-white gap-2">
+                         <Save className="w-5 h-5" /> Guardar Cambios
                      </Button>
                  </DialogFooter>
              </DialogContent>

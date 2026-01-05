@@ -118,3 +118,152 @@ nextjs-devtools,
 [class*="nextjs-devtools"] {
   display: none !important;
 }
+
+/* ================================================
+   OPTIMIZACIÓN PARA PANTALLA POS/TABLET 10.1"
+   Resolución: 1920x1080 (Full HD)
+   Tamaño físico: 241.5mm x 153.2mm x 71.8mm
+   DPI aproximado: ~224 PPI
+   ================================================ */
+
+/* Media query específica para pantallas Full HD de alta densidad */
+@media screen and (min-width: 1920px) and (max-height: 1080px),
+       screen and (width: 1920px) and (height: 1080px) {
+  
+  /* Aumentar tamaño base de fuente para mejor legibilidad */
+  html {
+    font-size: 18px;
+  }
+  
+  /* Botones más grandes y táctiles */
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Estilos para modo POS/Tablet (pantallas táctiles de alta densidad) */
+@layer components {
+  /* Clase para activar modo POS optimizado */
+  .pos-mode {
+    /* Botones más grandes */
+    --button-height: 3rem;
+    --input-height: 3rem;
+    --icon-size: 1.5rem;
+  }
+  
+  .pos-mode button,
+  .pos-mode [role="button"] {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  
+  .pos-mode input,
+  .pos-mode select,
+  .pos-mode textarea {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  
+  /* Tarjetas de estado más grandes para táctil */
+  .pos-status-card {
+    @apply p-5 min-h-[120px];
+  }
+  
+  .pos-status-card .status-count {
+    @apply text-4xl;
+  }
+  
+  .pos-status-card .status-label {
+    @apply text-base;
+  }
+  
+  /* Filas de tabla más táctiles */
+  .pos-table-row {
+    @apply min-h-[64px];
+  }
+  
+  .pos-table-row td {
+    @apply py-4;
+  }
+  
+  /* Botones de acción más grandes */
+  .pos-action-button {
+    @apply h-12 px-5 text-base gap-2;
+  }
+  
+  .pos-action-button svg {
+    @apply w-5 h-5;
+  }
+  
+  /* Modal optimizado para táctil */
+  .pos-modal-content {
+    @apply max-h-[85vh];
+  }
+  
+  .pos-modal-input {
+    @apply h-14 text-xl;
+  }
+  
+  /* Badge más visible */
+  .pos-badge {
+    @apply text-sm px-3 py-1.5;
+  }
+}
+
+/* Pantalla horizontal (landscape) para POS */
+@media screen and (min-aspect-ratio: 16/9) and (min-width: 1280px) {
+  .pos-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    height: calc(100vh - 4rem);
+  }
+  
+  .pos-main-content {
+    overflow-y: auto;
+    max-height: calc(100vh - 6rem);
+  }
+  
+  .pos-sidebar {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+  }
+}
+
+/* Scrollbar más grueso para táctil */
+@media (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 6px;
+    border: 2px solid #f1f5f9;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}
+
+/* Animaciones reducidas para mejor rendimiento en dispositivos embebidos */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
