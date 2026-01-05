@@ -92,7 +92,7 @@ export default function StaffLayout({
   };
 
   return (
-    <AuthGuard allowedRoles={['staff', 'admin']}>
+    <AuthGuard allowedRoles={['personal', 'admin']}>
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white shadow-sm">
         <SidebarHeader className="h-16 flex items-center justify-center border-b border-slate-100 bg-slate-50/50">

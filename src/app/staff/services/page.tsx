@@ -24,8 +24,10 @@ import {
   Trash2,
   ShoppingBasket,
   PenTool,
-  Printer
+  Printer,
+  Scale
 } from "lucide-react";
+import { ScaleInput } from "@/components/scale-input";
 import { 
   Card, 
   CardContent, 
@@ -523,7 +525,7 @@ export default function ServicesPage() {
       <body>
         <div class="receipt-container">
         <div class="header">
-          <div class="logo">LAVANDERÍA ANGY</div>
+          <div class="logo">LAVANDERÍA Y PLANCHADURIA ANGY</div>
           <div class="subtitle">Servicio de Calidad</div>
         </div>
         
@@ -898,14 +900,13 @@ export default function ServicesPage() {
                                         </Select>
                                      </div>
                                      <div className="flex-1 space-y-2">
-                                        <Label className="text-slate-600">Cantidad</Label>
-                                        <Input 
-                                            type="number" 
-                                            placeholder="0" 
-                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        <ScaleInput
+                                            label="Cantidad"
                                             value={tempQuantity}
-                                            onChange={(e) => setTempQuantity(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddToCart(); }}
+                                            onChange={setTempQuantity}
+                                            unit={customUnit}
+                                            placeholder="0"
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
                                         />
                                      </div>
                                      <Button 
@@ -920,27 +921,15 @@ export default function ServicesPage() {
                             // --- MODO ESTÁNDAR ---
                             <div className="flex items-end gap-3 animate-in fade-in">
                                 <div className="flex-1 space-y-2">
-                                    <Label className="text-slate-600">
-                                        {tempService ? `Cantidad de ${tempService.name}` : 'Selecciona un servicio arriba'}
-                                    </Label>
-                                    <div className="relative">
-                                        <Input 
-                                            type="number" 
-                                            min="0" 
-                                            step={tempService?.unit === 'kg' ? '0.1' : '1'}
-                                            placeholder="0"
-                                            className="h-11 rounded-xl border-slate-200 pl-4 text-lg font-medium bg-white"
-                                            value={tempQuantity}
-                                            onChange={(e) => setTempQuantity(e.target.value)}
-                                            disabled={!tempService}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddToCart(); }}
-                                        />
-                                        {tempService && (
-                                            <div className="absolute right-3 top-3 text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">
-                                                {tempService.unit === 'kg' ? 'KG' : 'PZA'}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <ScaleInput
+                                        label={tempService ? `Cantidad de ${tempService.name}` : 'Selecciona un servicio arriba'}
+                                        value={tempQuantity}
+                                        onChange={setTempQuantity}
+                                        unit={tempService?.unit || 'kg'}
+                                        placeholder="0"
+                                        disabled={!tempService}
+                                        className="h-11 rounded-xl border-slate-200 pl-4 text-lg font-medium bg-white"
+                                    />
                                 </div>
                                 <Button 
                                     className="h-11 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-md shadow-cyan-200 disabled:opacity-50"

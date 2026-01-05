@@ -8,7 +8,7 @@ import { useAuth, useFirestore } from '@/firebase/provider';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  allowedRoles?: string[]; // Roles permitidos: 'admin', 'staff', 'client'
+  allowedRoles?: string[]; // Roles permitidos: 'admin', 'personal', 'client'
   redirectTo?: string; // A dónde redirigir si no está autenticado
 }
 
@@ -63,7 +63,7 @@ export function AuthGuard({
             // Redirigir según su rol
             if (userRole === 'admin') {
               router.replace('/admin');
-            } else if (userRole === 'staff') {
+            } else if (userRole === 'personal') {
               router.replace('/staff');
             } else {
               router.replace('/client');
