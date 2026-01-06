@@ -644,7 +644,6 @@ export default function StaffDashboard() {
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         window.print();
-                        setTimeout(function() { window.close(); }, 500);
                     });
                 </script>
             </body>
