@@ -421,7 +421,7 @@ export default function StaffDashboard() {
 
         // Guardar items y total
         updates.items = editItems;
-        updates.estimatedTotal = editTotal;
+        updates.estimatedTotal = editItems.map(i => (i.subtotal || 0)).reduce((a,b) => a + b, 0);
         updates.serviceName = editItems.map(i => `${i.serviceName} (x${i.quantity})`).join(', ');
         
         // Guardar método de pago
@@ -532,15 +532,23 @@ export default function StaffDashboard() {
       return editItems.reduce((acc, item) => acc + (Number(item.subtotal) || 0), 0);
   }, [editItems]);
 
+  // Guardar configuración de impresora
+  const savePrinterConfig = (config: { showDialog: boolean; printerName: string }) => {
+    setPrinterConfig(config);
+    localStorage.setItem('printerConfig', JSON.stringify(config));
+  };
+
+  // Abrir modal de impresión
+  const openPrintModal = (order: any) => {
+    setPrintTarget(order);
+    setPrintModalOpen(true);
+  };
+
   // Función para imprimir recibo en impresora térmica 58mm (EC-5890X)
-  const handlePrintReceipt = (order: any) => {
+  const handlePrintReceipt = (order: any, showDialogOverride?: boolean) => {
     if (!order) return;
     
-    const printWindow = window.open('', '_blank', 'width=300,height=600');
-    if (!printWindow) {
-      toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
-      return;
-    }
+    const shouldShowDialog = showDialogOverride ?? printerConfig.showDialog;
 
     const paymentLabels: Record<string, string> = {
       'efectivo': 'Efectivo',
@@ -559,206 +567,149 @@ export default function StaffDashboard() {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Recibo #${order.id.slice(0,6).toUpperCase()}</title>
+        <title>Recibo #${order.id?.slice(0,6).toUpperCase() || 'NUEVO'}</title>
         <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          @page {
-            size: 58mm auto;
-            margin: 0mm 2mm 0mm 2mm;
-          }
-          html, body {
-            width: 58mm;
-            margin: 0 auto;
-          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          @page { size: 58mm auto; margin: 0mm 2mm 0mm 2mm; }
+          html, body { width: 58mm; margin: 0 auto; }
           body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            font-weight: bold;
-            color: #000000;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            padding: 2mm 3mm;
-            line-height: 1.5;
+            font-size: 12px; font-weight: bold; color: #000000;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            padding: 2mm 3mm; line-height: 1.5;
           }
-          .receipt-container {
-            width: 100%;
-            max-width: 52mm;
-            margin: 0 auto;
-          }
+          .receipt-container { width: 100%; max-width: 52mm; margin: 0 auto; }
           .center { text-align: center; }
           .bold { font-weight: 900; }
-          .separator {
-            border-top: 2px dashed #000000;
-            margin: 5px 0;
-          }
-          .double-separator {
-            border-top: 3px solid #000000;
-            margin: 6px 0;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 8px;
-          }
-          .logo {
-            font-size: 18px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            color: #000000;
-          }
-          .subtitle {
-            font-size: 11px;
-            font-weight: bold;
-            color: #000000;
-          }
-          .info-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            font-weight: bold;
-          }
-          .item-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 2px 0;
-          }
-          .item-name {
-            max-width: 60%;
-            word-wrap: break-word;
-          }
-          .total-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 16px;
-            font-weight: 900;
-            margin-top: 4px;
-            color: #000000;
-          }
-          .footer {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 11px;
-            font-weight: bold;
-          }
-          .order-id {
-            font-size: 16px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: #000000;
-          }
-          .notes {
-            font-size: 10px;
-            font-weight: bold;
-            margin-top: 4px;
-            padding: 4px;
-            border: 1px solid #000;
-          }
-          @media print {
-            html, body { 
-              width: 58mm; 
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .receipt-container {
-              width: 100%;
-            }
-          }
+          .separator { border-top: 2px dashed #000000; margin: 5px 0; }
+          .double-separator { border-top: 3px solid #000000; margin: 6px 0; }
+          .header { text-align: center; margin-bottom: 8px; }
+          .logo { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: #000000; }
+          .subtitle { font-size: 11px; font-weight: bold; color: #000000; }
+          .info-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; }
+          .item-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; padding: 2px 0; }
+          .item-name { max-width: 60%; word-wrap: break-word; }
+          .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin-top: 4px; color: #000000; }
+          .footer { text-align: center; margin-top: 10px; font-size: 11px; font-weight: bold; }
+          .order-id { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #000000; }
+          .notes { font-size: 10px; font-weight: bold; margin-top: 4px; padding: 4px; border: 1px solid #000; }
+          @media print { html, body { width: 58mm; } .receipt-container { width: 100%; } }
+          /* Ocultar botones en impresión */
+          .no-print { display: block; margin: 10px; text-align: center; }
+          @media print { .no-print { display: none !important; } }
         </style>
       </head>
       <body>
         <div class="receipt-container">
-        <div class="header">
-          <div class="logo">LAVANDERÍA ANGY</div>
-          <div class="subtitle">Servicio de Calidad</div>
-        </div>
-        
-        <div class="double-separator"></div>
-        
-        <div class="center">
-          <div class="order-id">Folio: ${order.id.slice(0,6).toUpperCase()}</div>
-          <div style="font-size: 10px;">${format(createdAt, "dd/MM/yyyy HH:mm")}</div>
-        </div>
-        
-        <div class="separator"></div>
-        
-        <div style="margin: 6px 0;">
-          <div class="info-row">
-            <span>Cliente:</span>
-            <span class="bold">${order.clientName || order.userName || 'Cliente'}</span>
+          <div class="header">
+            <div class="logo">LAVANDERÍA ANGY</div>
+            <div class="subtitle">Servicio de Calidad</div>
           </div>
-          ${order.clientPhone || order.phone ? `<div class="info-row"><span>Tel:</span><span>${order.clientPhone || order.phone}</span></div>` : ''}
-          <div class="info-row">
-            <span>Atendió:</span>
-            <span>${order.staffName || order.attendedBy || staffName || 'Personal'}</span>
+          
+          <div class="double-separator"></div>
+          
+          <div class="center">
+            <div class="order-id">Folio: ${order.id?.slice(0,6).toUpperCase() || 'NUEVO'}</div>
+            <div style="font-size: 10px;">${format(createdAt, "dd/MM/yyyy HH:mm")}</div>
           </div>
-        </div>
-        
-        <div class="separator"></div>
-        
-        <div style="margin: 6px 0;">
-          <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
-          ${items.map((item: any) => `
-            <div class="item-row">
-              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
-              <span>$${Number(item.subtotal || 0).toFixed(2)}</span>
+          
+          <div class="separator"></div>
+          
+          <div style="margin: 6px 0;">
+            <div class="info-row">
+              <span>Cliente:</span>
+              <span class="bold">${order.clientName || order.userName || 'Cliente'}</span>
             </div>
-          `).join('')}
-        </div>
-        
-        <div class="double-separator"></div>
-        
-        <div class="total-row">
-          <span>TOTAL:</span>
-          <span>$${Number(order.estimatedTotal || 0).toFixed(2)}</span>
-        </div>
-        
-        <div class="info-row" style="margin-top: 4px;">
-          <span>Pago:</span>
-          <span>${order.paymentStatus === 'pagado' ? '✓ PAGADO' : (paymentLabels[order.paymentMethod] || order.paymentMethod || 'Pendiente')}</span>
-        </div>
-        
-        <div class="separator"></div>
-        
-        <div style="margin: 6px 0;">
-          <div class="bold">ENTREGA:</div>
-          <div class="center" style="font-size: 13px;">
-            ${format(deliveryDate, "EEEE dd/MM", { locale: es })}
+            ${order.clientPhone || order.phone ? `<div class="info-row"><span>Tel:</span><span>${order.clientPhone || order.phone}</span></div>` : ''}
+            <div class="info-row">
+              <span>Atendió:</span>
+              <span>${order.staffName || order.attendedBy || staffName || 'Personal'}</span>
+            </div>
           </div>
-          <div class="center bold" style="font-size: 14px;">
-            ${order.deliveryTimeStr || ''} hrs
+          
+          <div class="separator"></div>
+          
+          <div style="margin: 6px 0;">
+            <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
+            ${items.map((item: any) => `
+              <div class="item-row">
+                <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+                <span>$${Number(item.subtotal || 0).toFixed(2)}</span>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="double-separator"></div>
+          
+          <div class="total-row">
+            <span>TOTAL:</span>
+            <span>$${Number(order.estimatedTotal || 0).toFixed(2)}</span>
+          </div>
+          
+          <div class="info-row" style="margin-top: 4px;">
+            <span>Pago:</span>
+            <span>${order.paymentStatus === 'pagado' ? '✓ PAGADO' : (paymentLabels[order.paymentMethod] || order.paymentMethod || 'Pendiente')}</span>
+          </div>
+          
+          <div class="separator"></div>
+          
+          <div style="margin: 6px 0;">
+            <div class="bold">ENTREGA:</div>
+            <div class="center" style="font-size: 13px;">
+              ${format(deliveryDate, "EEEE dd/MM", { locale: es })}
+            </div>
+            <div class="center bold" style="font-size: 14px;">
+              ${order.deliveryTimeStr || ''} hrs
+            </div>
+          </div>
+          
+          ${order.notes ? `<div class="notes">Notas: ${order.notes}</div>` : ''}
+          
+          <div class="double-separator"></div>
+          
+          <div class="footer">
+            <div>¡Gracias por su preferencia!</div>
+            <div>lavanderiaangy.vercel.app/</div>
+            <div style="margin-top: 4px;">Conserve este ticket</div>
           </div>
         </div>
         
-        ${order.notes ? `<div class="notes">Notas: ${order.notes}</div>` : ''}
-        
-        <div class="double-separator"></div>
-        
-        <div class="footer">
-          <div>¡Gracias por su preferencia!</div>
-          <div>Puede revisar su servicio en nuestro sitio web</div>
-          <div>lavanderiaangy.vercel.app/</div>
-          <div style="margin-top: 4px;">Conserve este ticket</div>
-        </div>
-        
+        <div class="no-print">
+          <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+            Vista previa del recibo. Selecciona tu impresora térmica en el diálogo.
+          </p>
+          <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #0891b2; color: white; border: none; border-radius: 8px; margin-right: 10px;">
+            🖨️ Imprimir
+          </button>
+          <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #64748b; color: white; border: none; border-radius: 8px;">
+            ✕ Cerrar
+          </button>
         </div>
         
         <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          };
+          // Solo auto-imprimir si no se debe mostrar diálogo
+          ${!shouldShowDialog ? `
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 1000);
+            };
+          ` : ''}
         </script>
       </body>
       </html>
     `;
 
+    const printWindow = window.open('', '_blank', 'width=400,height=700');
+    if (!printWindow) {
+      toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
+      return;
+    }
+
     printWindow.document.write(receiptHTML);
     printWindow.document.close();
+    
+    setPrintModalOpen(false);
+    setPrintTarget(null);
   };
 
   // --- Componentes ---
@@ -855,6 +806,20 @@ export default function StaffDashboard() {
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Estado para configuración de impresora
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printTarget, setPrintTarget] = useState<any | null>(null);
+  const [printerConfig, setPrinterConfig] = useState<{
+    showDialog: boolean;
+    printerName: string;
+  }>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('printerConfig');
+      return saved ? JSON.parse(saved) : { showDialog: true, printerName: '' };
+    }
+    return { showDialog: true, printerName: '' };
+  });
 
   return (
     <div className="min-h-screen font-sans p-3 md:p-6 lg:p-8 relative pos-mode">
@@ -1525,6 +1490,7 @@ export default function StaffDashboard() {
                      <Button 
                          variant="outline" 
                          onClick={() => handlePrintReceipt(editTarget)} 
+                         
                          className="rounded-xl h-12 px-6 text-base border-cyan-200 text-cyan-700 hover:bg-cyan-50 gap-2"
                      >
                          <Printer className="w-5 h-5" /> Imprimir
@@ -1536,4 +1502,107 @@ export default function StaffDashboard() {
              </DialogContent>
         </Dialog>
 
+        {/* Modal de Configuración de Impresión */}
+        <Dialog open={printModalOpen} onOpenChange={setPrintModalOpen}>
+          <DialogContent className="rounded-2xl sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Printer className="h-5 w-5 text-cyan-600" />
+                Imprimir Recibo
+              </DialogTitle>
+              <DialogDescription>
+                Configura las opciones de impresión para tu impresora térmica.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {/* Vista previa */}
+              {printTarget && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-slate-600">Folio:</span>
+                    <span className="font-bold text-slate-800">{printTarget.id?.slice(0,6).toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-slate-600">Cliente:</span>
+                    <span className="font-medium text-slate-700">{printTarget.clientName || 'Cliente'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-slate-600">Total:</span>
+                    <span className="font-bold text-lg text-green-600">${Number(printTarget.estimatedTotal || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Opciones */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-50 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-cyan-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-700">Mostrar diálogo de impresión</p>
+                      <p className="text-xs text-slate-500">Permite seleccionar la impresora cada vez</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => savePrinterConfig({ ...printerConfig, showDialog: !printerConfig.showDialog })}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-colors relative",
+                      printerConfig.showDialog ? "bg-cyan-500" : "bg-slate-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                      printerConfig.showDialog ? "translate-x-6" : "translate-x-0.5"
+                    )} />
+                  </button>
+                </div>
+
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium">Consejo para impresora térmica:</p>
+                      <ul className="list-disc list-inside mt-1 text-xs space-y-1">
+                        <li>Asegúrate que la impresora esté encendida y conectada</li>
+                        <li>En el diálogo, selecciona tu impresora (ej: "POS-58" o "EC-5890X")</li>
+                        <li>Configura el tamaño de papel a 58mm si es necesario</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setPrintModalOpen(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => handlePrintReceipt(printTarget, true)}
+                variant="outline"
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Vista Previa
+              </Button>
+              <Button 
+                onClick={() => handlePrintReceipt(printTarget, printerConfig.showDialog)}
+                className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
     </div>
+  );
+}
