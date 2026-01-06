@@ -660,57 +660,61 @@ export default function StaffDashboard() {
       'transferencia': 'Transferencia',
       'pagar_al_retiro': 'Pago Pendiente'
     };
-    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    const printWindow = window.open('', '_blank', 'width=250,height=600');
     if (!printWindow) {
       toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
       return;
     }
-    // HTML optimizado y simple
+    // HTML optimizado para menos desperdicio de papel
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
       <head>
-          <meta charset="utf-8">
-          <title>Recibo #${data.id}</title>
-          <style>
-              body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0; padding: 0; }
-              .r { text-align: right; }
-              .c { text-align: center; }
-              .b { font-weight: bold; }
-              .s { font-size: 10px; }
-              .box { border-top:1px dashed #000; margin:6px 0; }
-          </style>
+        <meta charset="utf-8">
+        <title>Recibo #${data.id}</title>
+        <style>
+          @page { size: 58mm auto; margin: 0; }
+          html, body { width: 58mm; margin: 0; padding: 0; }
+          body { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; margin: 0; padding: 0 2mm; line-height: 1.2; }
+          .r { text-align: right; }
+          .c { text-align: center; }
+          .b { font-weight: bold; }
+          .s { font-size: 9px; }
+          .box { border-top:1px dashed #000; margin:3px 0; }
+          .spacer { height: 2px; }
+        </style>
       </head>
       <body>
-          <div class="c b">LAVANDERÍA Y PLANCHADURIA ANGY</div>
-          <div class="c s">Servicio de Calidad</div>
-          <div class="box"></div>
-          <div class="c b">Folio: ${(data.id || '').slice(0,6).toUpperCase()}</div>
-          <div class="c s">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
-          <div class="box"></div>
-          <div>Cliente: <span class="b">${data.clientName || ''}</span></div>
-          ${data.clientPhone ? `<div>Tel: ${data.clientPhone}</div>` : ''}
-          <div>Atendió: ${data.staffName || ''}</div>
-          <div class="box"></div>
-          <div class="b">SERVICIOS:</div>
-          ${(data.items || []).map((item: any) => `
-              <div><span>${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span><span class="r">$${Number(item.subtotal).toFixed(2)}</span></div>
-          `).join('')}
-          <div class="box"></div>
-          <div class="b">TOTAL: $${Number(data.estimatedTotal || 0).toFixed(2)}</div>
-          <div>Pago: ${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
-          <div class="box"></div>
-          <div>ENTREGA: <span class="b">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
-          ${data.notes ? `<div class="s">Notas: ${data.notes}</div>` : ''}
-          <div class="box"></div>
-          <div class="c s">¡Gracias por su preferencia!</div>
-          <div class="c s">lavanderiaangy.vercel.app</div>
-          <div class="c s">Conserve este ticket</div>
-          <script>
-              document.addEventListener('DOMContentLoaded', function() {
-                  window.print();
-              });
-          </script>
+        <div class="c b">LAVANDERÍA Y PLANCHADURIA ANGY</div>
+        <div class="c s">Servicio de Calidad</div>
+        <div class="box"></div>
+        <div class="c b">Folio: ${(data.id || '').slice(0,6).toUpperCase()}</div>
+        <div class="c s">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
+        <div class="box"></div>
+        <div>Cliente: <span class="b">${data.clientName || ''}</span></div>
+        ${data.clientPhone ? `<div>Tel: ${data.clientPhone}</div>` : ''}
+        <div>Atendió: ${data.staffName || ''}</div>
+        <div class="box"></div>
+        <div class="b">SERVICIOS:</div>
+        ${(data.items || []).map((item: any) => `
+          <div><span>${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span><span class="r">$${Number(item.subtotal).toFixed(2)}</span></div>
+        `).join('')}
+        <div class="box"></div>
+        <div class="b">TOTAL: $${Number(data.estimatedTotal || 0).toFixed(2)}</div>
+        <div>Pago: ${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
+        <div class="box"></div>
+        <div>ENTREGA: <span class="b">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
+        ${data.notes ? `<div class="s">Notas: ${data.notes}</div>` : ''}
+        <div class="box"></div>
+        <div class="c s">¡Gracias por su preferencia!</div>
+        <div class="c s">lavanderiaangy.vercel.app</div>
+        <div class="c s">Conserve este ticket</div>
+        <div class="spacer"></div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            window.print();
+          });
+        </script>
       </body>
       </html>
     `;

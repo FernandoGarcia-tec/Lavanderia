@@ -393,7 +393,7 @@ export default function ServicesPage() {
   const handlePrintReceipt = () => {
     if (!lastOrder) return;
     
-    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    const printWindow = window.open('', '_blank', 'width=250,height=600');
     if (!printWindow) {
       toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
       return;
