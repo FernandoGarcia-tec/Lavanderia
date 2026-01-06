@@ -286,6 +286,16 @@ export function ScaleInput({
   // Solo mostrar botones de báscula para unidad kg
   const showScaleButtons = unit === 'kg';
 
+  // Función para sumar/restar cantidad
+  const handleStep = (delta: number) => {
+    let val = parseFloat(value || '0') + delta;
+    if (val < 0) val = 0;
+    onChange(val.toFixed(2));
+  };
+
+  // Valores rápidos comunes para lavandería
+  const quickValues = unit === 'kg' ? [1, 2, 3, 5, 10] : [1, 2, 3, 5, 10, 20];
+
   return (
     <div className="space-y-2">
       {label && (
@@ -299,7 +309,9 @@ export function ScaleInput({
           )}
         </Label>
       )}
-      <div className="relative flex gap-2">
+      <div className="flex gap-2 items-center">
+        {/* Botón - */}
+        <Button type="button" size="icon" variant="outline" onClick={() => handleStep(-0.5)} disabled={disabled} className="rounded-full h-10 w-10 text-xl font-bold">-</Button>
         <div className="relative flex-1">
           <Input
             ref={inputRef}
@@ -307,21 +319,33 @@ export function ScaleInput({
             type="number"
             step="0.01"
             min="0"
+            inputMode="decimal"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             disabled={disabled}
             className={cn(
-              "pr-12 text-black placeholder:text-gray-400 bg-white border-slate-300 focus:border-cyan-500 focus:ring-cyan-500",
+              "pr-12 text-black placeholder:text-gray-400 bg-white border-slate-300 focus:border-cyan-500 focus:ring-cyan-500 text-center text-2xl font-bold",
               isConnected && "border-green-500 focus:ring-green-500",
               className
             )}
-            style={{ color: '#111', background: '#fff', caretColor: '#0891b2' }}
+            style={{ color: '#111', background: '#fff', caretColor: '#0891b2', fontWeight: 700, fontSize: '1.5rem', textAlign: 'center' }}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm bg-white px-1">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-base bg-white px-1 select-none">
             {unit === 'kg' ? 'kg' : 'pzas'}
           </span>
         </div>
+        {/* Botón + */}
+        <Button type="button" size="icon" variant="outline" onClick={() => handleStep(0.5)} disabled={disabled} className="rounded-full h-10 w-10 text-xl font-bold">+</Button>
+      </div>
+      {/* Valores rápidos */}
+      <div className="flex gap-2 mt-1">
+        {quickValues.map((v) => (
+          <Button key={v} type="button" size="sm" variant="ghost" onClick={() => onChange(v.toFixed(2))} disabled={disabled} className="rounded-lg border border-slate-200 text-base px-3 py-1 font-semibold hover:bg-cyan-50">
+            {v} {unit === 'kg' ? 'kg' : 'pz'}
+          </Button>
+        ))}
+      </div>
         
         {showScaleButtons && (
           <>
@@ -409,7 +433,6 @@ export function ScaleInput({
             </TooltipProvider>
           </>
         )}
-      </div>
       
       {error && (
         <p className="text-sm text-red-500 flex items-center gap-1">
@@ -483,7 +506,7 @@ export function ScaleInput({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
   );
 }
 
