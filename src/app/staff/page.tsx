@@ -271,7 +271,7 @@ export default function StaffDashboard() {
       toast({ title: 'Caja Abierta', description: `Monto inicial: $${amount.toFixed(2)}` });
       setShowModal(false);
     } catch (err: any) {
-      toast({ title: 'Error', description: 'No se pudo guarda', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo guardar.', variant: 'destructive' });
     }
   }
 
@@ -581,11 +581,7 @@ export default function StaffDashboard() {
                 setPrintTarget(null);
             } else {
                 printReceiptHTML(receiptData);
-                toast({ 
-                    title: "Error de impresión USB", 
-                    description: thermalPrinter.error || "No se pudo imprimir por USB. Usando impresión estándar.", 
-                    variant: "destructive" 
-                });
+                
             }
         } catch (err: any) {
             printReceiptHTML(receiptData);
