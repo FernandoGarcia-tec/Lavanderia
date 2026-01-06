@@ -299,7 +299,6 @@ export function ScaleInput({
           )}
         </Label>
       )}
-      
       <div className="relative flex gap-2">
         <div className="relative flex-1">
           <Input
@@ -313,12 +312,13 @@ export function ScaleInput({
             placeholder={placeholder}
             disabled={disabled}
             className={cn(
-              "pr-12",
+              "pr-12 text-black placeholder:text-gray-400 bg-white border-slate-300 focus:border-cyan-500 focus:ring-cyan-500",
               isConnected && "border-green-500 focus:ring-green-500",
               className
             )}
+            style={{ color: '#111', background: '#fff', caretColor: '#0891b2' }}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm bg-white px-1">
             {unit === 'kg' ? 'kg' : 'pzas'}
           </span>
         </div>
