@@ -840,7 +840,7 @@ export default function StaffDashboard() {
                       
                     </h1>
                     <p className="text-cyan-50 font-medium text-base lg:text-lg opacity-90">
-                        Hola, {staffName || 'Colaborador'}. Aquí está el resumen de hoy.
+                        Hola, {staffName || 'Colaborador'}. Aquí está el resumen de hoy
                     </p>
                 </div>
                 {/* Botón de Pantalla Completa */}
