@@ -212,7 +212,7 @@ export function useThermalPrinter() {
         ...commands.alignCenter,
         ...commands.doubleBoth,
         ...commands.boldOn,
-        ...stringToBytes('LAVANDERIA ANGY'),
+        ...stringToBytes('LAVANDERIA Y PLANCHADURIA ANGY'),
         ...commands.lineFeed,
         ...commands.normal,
         ...stringToBytes('Servicio de Calidad'),
