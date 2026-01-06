@@ -271,7 +271,7 @@ export default function StaffDashboard() {
       toast({ title: 'Caja Abierta', description: `Monto inicial: $${amount.toFixed(2)}` });
       setShowModal(false);
     } catch (err: any) {
-      toast({ title: 'Error', description: 'No se pudo guardar.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo guarda', variant: 'destructive' });
     }
   }
 
