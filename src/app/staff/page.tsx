@@ -580,8 +580,7 @@ export default function StaffDashboard() {
                 setPrintModalOpen(false);
                 setPrintTarget(null);
             } else {
-                // Si falla la impresión directa, abrir la ventana de impresión del navegador
-                window.print();
+                printReceiptHTML(receiptData);
                 toast({ 
                     title: "Error de impresión USB", 
                     description: thermalPrinter.error || "No se pudo imprimir por USB. Usando impresión estándar.", 
@@ -589,14 +588,111 @@ export default function StaffDashboard() {
                 });
             }
         } catch (err: any) {
-            // Si ocurre un error, abrir la ventana de impresión del navegador
-            window.print();
+            printReceiptHTML(receiptData);
             toast({ 
                 title: "Error de impresión", 
                 description: (err && err.message) || "No se pudo imprimir. Usando impresión estándar.", 
                 variant: "destructive" 
             });
         }
+    // Imprimir recibo en ventana nueva (solo recibo)
+    function printReceiptHTML(data: any) {
+        const paymentLabels: Record<string, string> = {
+            'efectivo': 'Efectivo',
+            'terminal': 'Tarjeta',
+            'transferencia': 'Transferencia',
+            'pagar_al_retiro': 'Pago Pendiente'
+        };
+        const printWindow = window.open('', '_blank', 'width=300,height=600');
+        if (!printWindow) {
+            toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
+            return;
+        }
+        const receiptHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Recibo #${data.id || data.orderId}</title>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    @page { size: 58mm auto; margin: 0mm 2mm 0mm 2mm; }
+                    html, body { width: 58mm; margin: 0 auto; }
+                    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: bold; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 2mm 3mm; line-height: 1.5; }
+                    .receipt-container { width: 100%; max-width: 52mm; margin: 0 auto; }
+                    .center { text-align: center; }
+                    .bold { font-weight: 900; }
+                    .separator { border-top: 2px dashed #000; margin: 5px 0; }
+                    .double-separator { border-top: 3px solid #000; margin: 6px 0; }
+                    .header { text-align: center; margin-bottom: 8px; }
+                    .logo { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: #000; }
+                    .subtitle { font-size: 11px; font-weight: bold; color: #000; }
+                    .info-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; }
+                    .item-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; padding: 2px 0; }
+                    .item-name { max-width: 60%; word-wrap: break-word; }
+                    .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin-top: 4px; color: #000; }
+                    .footer { text-align: center; margin-top: 10px; font-size: 11px; font-weight: bold; }
+                    .order-id { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #000; }
+                    .notes { font-size: 10px; font-weight: bold; margin-top: 4px; padding: 4px; border: 1px solid #000; }
+                    @media print { html, body { width: 58mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .receipt-container { width: 100%; } }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-container">
+                <div class="header">
+                    <div class="logo">LAVANDERÍA Y PLANCHADURIA ANGY</div>
+                    <div class="subtitle">Servicio de Calidad</div>
+                </div>
+                <div class="double-separator"></div>
+                <div class="center">
+                    <div class="order-id">Folio: ${(data.id || data.orderId || '').slice(0,6).toUpperCase()}</div>
+                    <div style="font-size: 10px;">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
+                </div>
+                <div class="separator"></div>
+                <div style="margin: 6px 0;">
+                    <div class="info-row"><span>Cliente:</span><span class="bold">${data.clientName || ''}</span></div>
+                    ${data.clientPhone ? `<div class="info-row"><span>Tel:</span><span>${data.clientPhone}</span></div>` : ''}
+                    <div class="info-row"><span>Atendió:</span><span>${data.staffName || ''}</span></div>
+                </div>
+                <div class="separator"></div>
+                <div style="margin: 6px 0;">
+                    <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
+                    ${(data.items || []).map((item: any) => `
+                        <div class="item-row">
+                            <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+                            <span>$${Number(item.subtotal).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="double-separator"></div>
+                <div class="total-row"><span>TOTAL:</span><span>$${Number(data.estimatedTotal || data.total || 0).toFixed(2)}</span></div>
+                <div class="info-row" style="margin-top: 4px;"><span>Pago:</span><span>${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</span></div>
+                <div class="separator"></div>
+                <div style="margin: 6px 0;">
+                    <div class="bold">ENTREGA:</div>
+                    <div class="center" style="font-size: 13px;">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</div>
+                </div>
+                ${data.notes ? `<div class="notes">Notas: ${data.notes}</div>` : ''}
+                <div class="double-separator"></div>
+                <div class="footer">
+                    <div>¡Gracias por su preferencia!</div>
+                    <div>Puede revisar su servicio en nuestro sitio web</div>
+                    <div>lavanderiaangy.vercel.app/</div>
+                    <div style="margin-top: 4px;">Conserve este ticket</div>
+                </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() { window.close(); }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(receiptHTML);
+        printWindow.document.close();
+    }
   };
 
   // --- Componentes ---
