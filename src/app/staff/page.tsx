@@ -544,6 +544,61 @@ export default function StaffDashboard() {
     localStorage.setItem('printerConfig', JSON.stringify(config));
   };
 
+  // Estado para el modal de vista previa de recibo
+  const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
+  const [receiptPreviewData, setReceiptPreviewData] = useState<any>(null);
+
+  // Componente de vista previa de recibo para imprimir
+  function ReceiptPreviewModal() {
+    const data = receiptPreviewData;
+    if (!data) return null;
+    const paymentLabels: Record<string, string> = {
+      'efectivo': 'Efectivo',
+      'terminal': 'Tarjeta',
+      'transferencia': 'Transferencia',
+      'pagar_al_retiro': 'Pago Pendiente'
+    };
+    return (
+      <Dialog open={receiptPreviewOpen} onOpenChange={setReceiptPreviewOpen}>
+        <DialogContent className="max-w-xs p-0">
+          <div className="p-4 print:p-0 bg-white">
+            <div className="text-center font-bold text-base">LAVANDERÍA Y PLANCHADURIA ANGY</div>
+            <div className="text-center text-xs">Servicio de Calidad</div>
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div className="text-center font-bold">Folio: {(data.id || '').slice(0,6).toUpperCase()}</div>
+            <div className="text-center text-xs">{data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div>Cliente: <span className="font-bold">{data.clientName || ''}</span></div>
+            {data.clientPhone && <div>Tel: {data.clientPhone}</div>}
+            <div>Atendió: {data.staffName || ''}</div>
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div className="font-bold">SERVICIOS:</div>
+            {(data.items || []).map((item: any, idx: number) => (
+              <div key={idx} className="flex justify-between text-xs">
+                <span>{item.serviceName} x{item.quantity}{item.unit === 'kg' ? 'kg' : 'pz'}</span>
+                <span>${Number(item.subtotal).toFixed(2)}</span>
+              </div>
+            ))}
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div className="font-bold">TOTAL: ${Number(data.estimatedTotal || data.total || 0).toFixed(2)}</div>
+            <div>Pago: {paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div>ENTREGA: <span className="font-bold">{data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
+            {data.notes && <div className="text-xs">Notas: {data.notes}</div>}
+            <hr className="my-2 border-dashed border-gray-400" />
+            <div className="text-center text-xs">¡Gracias por su preferencia!</div>
+            <div className="text-center text-xs">lavanderiaangy.vercel.app</div>
+            <div className="text-center text-xs">Conserve este ticket</div>
+          </div>
+          <DialogFooter className="mt-2 flex gap-2">
+            <Button onClick={() => window.print()} className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white">Imprimir</Button>
+            <Button variant="outline" onClick={() => setReceiptPreviewOpen(false)} className="flex-1">Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // Abrir modal de impresión
   const openPrintModal = (order: any) => {
     setPrintTarget(order);
@@ -552,106 +607,115 @@ export default function StaffDashboard() {
 
   // Función para imprimir recibo - Con soporte USB directo para tablets
   const handlePrintReceipt = async (order: any, showDialogOverride?: boolean) => {
-        if (!order) return;
-        const items = order.items || [{ 
-            serviceName: order.serviceName || 'Servicio', 
-            quantity: order.quantity || 1, 
-            unit: order.unit || 'pza', 
-            subtotal: order.estimatedTotal || 0 
-        }];
-        const receiptData = {
-            id: order.id || 'NUEVO',
-            clientName: order.clientName || order.userName || 'Cliente',
-            clientPhone: order.clientPhone || order.phone,
-            staffName: order.staffName || order.attendedBy || staffName || 'Personal',
-            items,
-            estimatedTotal: Number(order.estimatedTotal || 0),
-            paymentMethod: order.paymentMethod || 'efectivo',
-            deliveryDate: order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date(),
-            createdAt: order.createdAt?.toDate ? order.createdAt.toDate() : new Date(),
-            notes: order.notes,
-            amountPaid: order.amountPaid,
-            change: order.change,
-        };
-        try {
-            const success = await thermalPrinter.printReceipt(receiptData);
-            if (success) {
-                toast({ title: "✅ Impreso", description: "Recibo enviado a la impresora" });
-                setPrintModalOpen(false);
-                setPrintTarget(null);
-            } else {
-                printReceiptHTML(receiptData);
-                
-            }
-        } catch (err: any) {
-            printReceiptHTML(receiptData);
-            
-        }
-    // Imprimir recibo en ventana nueva (solo recibo)
-    function printReceiptHTML(data: any) {
-        const paymentLabels: Record<string, string> = {
-            'efectivo': 'Efectivo',
-            'terminal': 'Tarjeta',
-            'transferencia': 'Transferencia',
-            'pagar_al_retiro': 'Pago Pendiente'
-        };
-        const printWindow = window.open('', '_blank', 'width=300,height=600');
-        if (!printWindow) {
-            toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
-            return;
-        }
-        // HTML optimizado y simple
-        const receiptHTML = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Recibo #${data.id || data.orderId}</title>
-                <style>
-                    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0; padding: 0; }
-                    .r { text-align: right; }
-                    .c { text-align: center; }
-                    .b { font-weight: bold; }
-                    .s { font-size: 10px; }
-                    .box { border-top:1px dashed #000; margin:6px 0; }
-                </style>
-            </head>
-            <body>
-                <div class="c b">LAVANDERÍA Y PLANCHADURIA ANGY</div>
-                <div class="c s">Servicio de Calidad</div>
-                <div class="box"></div>
-                <div class="c b">Folio: ${(data.id || data.orderId || '').slice(0,6).toUpperCase()}</div>
-                <div class="c s">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
-                <div class="box"></div>
-                <div>Cliente: <span class="b">${data.clientName || ''}</span></div>
-                ${data.clientPhone ? `<div>Tel: ${data.clientPhone}</div>` : ''}
-                <div>Atendió: ${data.staffName || ''}</div>
-                <div class="box"></div>
-                <div class="b">SERVICIOS:</div>
-                ${(data.items || []).map((item: any) => `
-                    <div><span>${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span><span class="r">$${Number(item.subtotal).toFixed(2)}</span></div>
-                `).join('')}
-                <div class="box"></div>
-                <div class="b">TOTAL: $${Number(data.estimatedTotal || data.total || 0).toFixed(2)}</div>
-                <div>Pago: ${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
-                <div class="box"></div>
-                <div>ENTREGA: <span class="b">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
-                ${data.notes ? `<div class="s">Notas: ${data.notes}</div>` : ''}
-                <div class="box"></div>
-                <div class="c s">¡Gracias por su preferencia!</div>
-                <div class="c s">lavanderiaangy.vercel.app</div>
-                <div class="c s">Conserve este ticket</div>
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        window.print();
-                    });
-                </script>
-            </body>
-            </html>
-        `;
-        printWindow.document.write(receiptHTML);
-        printWindow.document.close();
+    if (!order) return;
+    const items = order.items || [{ 
+      serviceName: order.serviceName || 'Servicio', 
+      quantity: order.quantity || 1, 
+      unit: order.unit || 'pza', 
+      subtotal: order.estimatedTotal || 0 
+    }];
+    const receiptData = {
+      id: order.id || 'NUEVO',
+      clientName: order.clientName || order.userName || 'Cliente',
+      clientPhone: order.clientPhone || order.phone,
+      staffName: order.staffName || order.attendedBy || staffName || 'Personal',
+      items,
+      estimatedTotal: Number(order.estimatedTotal || 0),
+      paymentMethod: order.paymentMethod || 'efectivo',
+      deliveryDate: order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date(),
+      createdAt: order.createdAt?.toDate ? order.createdAt.toDate() : new Date(),
+      notes: order.notes,
+      amountPaid: order.amountPaid,
+      change: order.change,
+    };
+    try {
+      const success = await thermalPrinter.printReceipt(receiptData);
+      if (success) {
+        toast({ title: "✅ Impreso", description: "Recibo enviado a la impresora" });
+        setPrintModalOpen(false);
+        setPrintTarget(null);
+      } else {
+        setReceiptPreviewData(receiptData);
+        setReceiptPreviewOpen(true);
+        toast({ 
+          title: "Error de impresión USB", 
+          description: thermalPrinter.error || "No se pudo imprimir por USB. Usando impresión estándar.", 
+          variant: "destructive" 
+        });
+      }
+    } catch (err) {
+      setReceiptPreviewData(receiptData);
+      setReceiptPreviewOpen(true);
+      toast({ 
+        title: "Error de impresión", 
+        description: (err && (err as any).message) || "No se pudo imprimir. Usando impresión estándar.", 
+        variant: "destructive" 
+      });
     }
+    // Abrir ventana de impresión estándar
+    const data = receiptData;
+    const paymentLabels: Record<string, string> = {
+      'efectivo': 'Efectivo',
+      'terminal': 'Tarjeta',
+      'transferencia': 'Transferencia',
+      'pagar_al_retiro': 'Pago Pendiente'
+    };
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    if (!printWindow) {
+      toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
+      return;
+    }
+    // HTML optimizado y simple
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="utf-8">
+          <title>Recibo #${data.id}</title>
+          <style>
+              body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0; padding: 0; }
+              .r { text-align: right; }
+              .c { text-align: center; }
+              .b { font-weight: bold; }
+              .s { font-size: 10px; }
+              .box { border-top:1px dashed #000; margin:6px 0; }
+          </style>
+      </head>
+      <body>
+          <div class="c b">LAVANDERÍA Y PLANCHADURIA ANGY</div>
+          <div class="c s">Servicio de Calidad</div>
+          <div class="box"></div>
+          <div class="c b">Folio: ${(data.id || '').slice(0,6).toUpperCase()}</div>
+          <div class="c s">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
+          <div class="box"></div>
+          <div>Cliente: <span class="b">${data.clientName || ''}</span></div>
+          ${data.clientPhone ? `<div>Tel: ${data.clientPhone}</div>` : ''}
+          <div>Atendió: ${data.staffName || ''}</div>
+          <div class="box"></div>
+          <div class="b">SERVICIOS:</div>
+          ${(data.items || []).map((item: any) => `
+              <div><span>${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span><span class="r">$${Number(item.subtotal).toFixed(2)}</span></div>
+          `).join('')}
+          <div class="box"></div>
+          <div class="b">TOTAL: $${Number(data.estimatedTotal || 0).toFixed(2)}</div>
+          <div>Pago: ${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
+          <div class="box"></div>
+          <div>ENTREGA: <span class="b">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
+          ${data.notes ? `<div class="s">Notas: ${data.notes}</div>` : ''}
+          <div class="box"></div>
+          <div class="c s">¡Gracias por su preferencia!</div>
+          <div class="c s">lavanderiaangy.vercel.app</div>
+          <div class="c s">Conserve este ticket</div>
+          <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  window.print();
+              });
+          </script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
   };
 
   // --- Componentes ---
