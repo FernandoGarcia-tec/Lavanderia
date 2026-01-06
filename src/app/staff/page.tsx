@@ -553,7 +553,6 @@ export default function StaffDashboard() {
   // Función para imprimir recibo - Con soporte USB directo para tablets
   const handlePrintReceipt = async (order: any, showDialogOverride?: boolean) => {
     if (!order) return;
-    
     // Si la impresora USB está conectada, usar impresión directa
     if (thermalPrinter.isConnected) {
       const items = order.items || [{ 
@@ -562,7 +561,6 @@ export default function StaffDashboard() {
         unit: order.unit || 'pza', 
         subtotal: order.estimatedTotal || 0 
       }];
-      
       const receiptData = {
         id: order.id || 'NUEVO',
         clientName: order.clientName || order.userName || 'Cliente',
@@ -577,9 +575,7 @@ export default function StaffDashboard() {
         amountPaid: order.amountPaid,
         change: order.change,
       };
-      
       const success = await thermalPrinter.printReceipt(receiptData);
-      
       if (success) {
         toast({ title: "✅ Impreso", description: "Recibo enviado a la impresora" });
         setPrintModalOpen(false);
@@ -593,169 +589,9 @@ export default function StaffDashboard() {
       }
       return;
     }
-    
-    // Fallback: Impresión por ventana (navegador)
-    const shouldShowDialog = showDialogOverride ?? printerConfig.showDialog;
-
-    const paymentLabels: Record<string, string> = {
-      'efectivo': 'Efectivo',
-      'terminal': 'Tarjeta',
-      'tarjeta': 'Tarjeta',
-      'transferencia': 'Transferencia',
-      'pagar_al_retiro': 'Pago Pendiente'
-    };
-
-    const deliveryDate = order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date();
-    const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
-    const items = order.items || [{ serviceName: order.serviceName || 'Servicio', quantity: order.quantity || 1, unit: order.unit || 'pza', subtotal: order.estimatedTotal || 0 }];
-
-    const receiptHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Recibo #${order.id?.slice(0,6).toUpperCase() || 'NUEVO'}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: 58mm auto; margin: 0mm 2mm 0mm 2mm; }
-          html, body { width: 58mm; margin: 0 auto; }
-          body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px; font-weight: bold; color: #000000;
-            -webkit-print-color-adjust: exact; print-color-adjust: exact;
-            padding: 2mm 3mm; line-height: 1.5;
-          }
-          .receipt-container { width: 100%; max-width: 52mm; margin: 0 auto; }
-          .center { text-align: center; }
-          .bold { font-weight: 900; }
-          .separator { border-top: 2px dashed #000000; margin: 5px 0; }
-          .double-separator { border-top: 3px solid #000000; margin: 6px 0; }
-          .header { text-align: center; margin-bottom: 8px; }
-          .logo { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: #000000; }
-          .subtitle { font-size: 11px; font-weight: bold; color: #000000; }
-          .info-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; }
-          .item-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; padding: 2px 0; }
-          .item-name { max-width: 60%; word-wrap: break-word; }
-          .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin-top: 4px; color: #000000; }
-          .footer { text-align: center; margin-top: 10px; font-size: 11px; font-weight: bold; }
-          .order-id { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #000000; }
-          .notes { font-size: 10px; font-weight: bold; margin-top: 4px; padding: 4px; border: 1px solid #000; }
-          @media print { html, body { width: 58mm; } .receipt-container { width: 100%; } }
-          .no-print { display: block; margin: 10px; text-align: center; }
-          @media print { .no-print { display: none !important; } }
-        </style>
-      </head>
-      <body>
-        <div class="receipt-container">
-          <div class="header">
-            <div class="logo">LAVANDERÍA ANGY</div>
-            <div class="subtitle">Servicio de Calidad</div>
-          </div>
-          
-          <div class="double-separator"></div>
-          
-          <div class="center">
-            <div class="order-id">Folio: ${order.id?.slice(0,6).toUpperCase() || 'NUEVO'}</div>
-            <div style="font-size: 10px;">${format(createdAt, "dd/MM/yyyy HH:mm")}</div>
-          </div>
-          
-          <div class="separator"></div>
-          
-          <div style="margin: 6px 0;">
-            <div class="info-row">
-              <span>Cliente:</span>
-              <span class="bold">${order.clientName || order.userName || 'Cliente'}</span>
-            </div>
-            ${order.clientPhone || order.phone ? `<div class="info-row"><span>Tel:</span><span>${order.clientPhone || order.phone}</span></div>` : ''}
-            <div class="info-row">
-              <span>Atendió:</span>
-              <span>${order.staffName || order.attendedBy || staffName || 'Personal'}</span>
-            </div>
-          </div>
-          
-          <div class="separator"></div>
-          
-          <div style="margin: 6px 0;">
-            <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
-            ${items.map((item: any) => `
-              <div class="item-row">
-                <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
-                <span>$${Number(item.subtotal || 0).toFixed(2)}</span>
-              </div>
-            `).join('')}
-          </div>
-          
-          <div class="double-separator"></div>
-          
-          <div class="total-row">
-            <span>TOTAL:</span>
-            <span>$${Number(order.estimatedTotal || 0).toFixed(2)}</span>
-          </div>
-          
-          <div class="info-row" style="margin-top: 4px;">
-            <span>Pago:</span>
-            <span>${order.paymentStatus === 'pagado' ? '✓ PAGADO' : (paymentLabels[order.paymentMethod] || order.paymentMethod || 'Pendiente')}</span>
-          </div>
-          
-          <div class="separator"></div>
-          
-          <div style="margin: 6px 0;">
-            <div class="bold">ENTREGA:</div>
-            <div class="center" style="font-size: 13px;">
-              ${format(deliveryDate, "EEEE dd/MM", { locale: es })}
-            </div>
-            <div class="center bold" style="font-size: 14px;">
-              ${order.deliveryTimeStr || ''} hrs
-            </div>
-          </div>
-          
-          ${order.notes ? `<div class="notes">Notas: ${order.notes}</div>` : ''}
-          
-          <div class="double-separator"></div>
-          
-          <div class="footer">
-            <div>¡Gracias por su preferencia!</div>
-            <div>lavanderiaangy.vercel.app/</div>
-            <div style="margin-top: 4px;">Conserve este ticket</div>
-          </div>
-        </div>
-        
-        <div class="no-print">
-          <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-            Vista previa del recibo. Selecciona tu impresora térmica en el diálogo.
-          </p>
-          <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #0891b2; color: white; border: none; border-radius: 8px; margin-right: 10px;">
-            🖨️ Imprimir
-          </button>
-          <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #64748b; color: white; border: none; border-radius: 8px;">
-            ✕ Cerrar
-          </button>
-        </div>
-        
-        <script>
-          // Solo auto-imprimir si no se debe mostrar diálogo
-          ${!shouldShowDialog ? `
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 1000);
-            };
-          ` : ''}
-        </script>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank', 'width=400,height=700');
-    if (!printWindow) {
-      toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
-      return;
-    }
-
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
-    
-    setPrintModalOpen(false);
-    setPrintTarget(null);
+    // Si no hay USB, mostrar modal de vista previa
+    setPrintTarget(order);
+    setPrintModalOpen(true);
   };
 
   // --- Componentes ---
