@@ -552,46 +552,47 @@ export default function StaffDashboard() {
 
   // Función para imprimir recibo - Con soporte USB directo para tablets
   const handlePrintReceipt = async (order: any, showDialogOverride?: boolean) => {
-    if (!order) return;
-    // Si la impresora USB está conectada, usar impresión directa
-    if (thermalPrinter.isConnected) {
-      const items = order.items || [{ 
-        serviceName: order.serviceName || 'Servicio', 
-        quantity: order.quantity || 1, 
-        unit: order.unit || 'pza', 
-        subtotal: order.estimatedTotal || 0 
-      }];
-      const receiptData = {
-        id: order.id || 'NUEVO',
-        clientName: order.clientName || order.userName || 'Cliente',
-        clientPhone: order.clientPhone || order.phone,
-        staffName: order.staffName || order.attendedBy || staffName || 'Personal',
-        items,
-        estimatedTotal: Number(order.estimatedTotal || 0),
-        paymentMethod: order.paymentMethod || 'efectivo',
-        deliveryDate: order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date(),
-        createdAt: order.createdAt?.toDate ? order.createdAt.toDate() : new Date(),
-        notes: order.notes,
-        amountPaid: order.amountPaid,
-        change: order.change,
-      };
-      const success = await thermalPrinter.printReceipt(receiptData);
-      if (success) {
-        toast({ title: "✅ Impreso", description: "Recibo enviado a la impresora" });
-        setPrintModalOpen(false);
-        setPrintTarget(null);
-      } else {
-        toast({ 
-          title: "Error de impresión", 
-          description: thermalPrinter.error || "No se pudo imprimir", 
-          variant: "destructive" 
-        });
-      }
-      return;
-    }
-    // Si no hay USB, mostrar modal de vista previa
-    setPrintTarget(order);
-    setPrintModalOpen(true);
+        if (!order) return;
+        const items = order.items || [{ 
+            serviceName: order.serviceName || 'Servicio', 
+            quantity: order.quantity || 1, 
+            unit: order.unit || 'pza', 
+            subtotal: order.estimatedTotal || 0 
+        }];
+        const receiptData = {
+            id: order.id || 'NUEVO',
+            clientName: order.clientName || order.userName || 'Cliente',
+            clientPhone: order.clientPhone || order.phone,
+            staffName: order.staffName || order.attendedBy || staffName || 'Personal',
+            items,
+            estimatedTotal: Number(order.estimatedTotal || 0),
+            paymentMethod: order.paymentMethod || 'efectivo',
+            deliveryDate: order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date(),
+            createdAt: order.createdAt?.toDate ? order.createdAt.toDate() : new Date(),
+            notes: order.notes,
+            amountPaid: order.amountPaid,
+            change: order.change,
+        };
+        try {
+            const success = await thermalPrinter.printReceipt(receiptData);
+            if (success) {
+                toast({ title: "✅ Impreso", description: "Recibo enviado a la impresora" });
+                setPrintModalOpen(false);
+                setPrintTarget(null);
+            } else {
+                toast({ 
+                    title: "Error de impresión", 
+                    description: thermalPrinter.error || "No se pudo imprimir", 
+                    variant: "destructive" 
+                });
+            }
+        } catch (err: any) {
+            toast({ 
+                title: "Error de impresión", 
+                description: (err && err.message) || "No se pudo imprimir", 
+                variant: "destructive" 
+            });
+        }
   };
 
   // --- Componentes ---
@@ -1416,55 +1417,7 @@ export default function StaffDashboard() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              {/* Estado de impresora USB y botón conectar/desconectar SIEMPRE visible */}
-              <div className={cn(
-                "flex items-center justify-between p-4 rounded-xl border-2 transition-all",
-                thermalPrinter.isConnected 
-                  ? "bg-green-50 border-green-300" 
-                  : "bg-gray-50 border-gray-200"
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "p-2.5 rounded-lg",
-                    thermalPrinter.isConnected ? "bg-green-100" : "bg-gray-100"
-                  )}>
-                    <Usb className={cn(
-                      "h-6 w-6",
-                      thermalPrinter.isConnected ? "text-green-600" : "text-gray-400"
-                    )} />
-                  </div>
-                  <div>
-                    <p className={cn(
-                      "font-semibold",
-                      thermalPrinter.isConnected ? "text-green-800" : "text-gray-600"
-                    )}>
-                      {thermalPrinter.isConnected ? (thermalPrinter.printerName || 'Impresora USB conectada') : 'Impresora USB no conectada'}
-                    </p>
-                    <p className="text-xs text-slate-500">{thermalPrinter.isConnected ? "Lista para imprimir" : "Conecta tu impresora térmica USB"}</p>
-                  </div>
-                </div>
-                <Button
-                  variant={thermalPrinter.isConnected ? "outline" : "default"}
-                  size="sm"
-                  onClick={thermalPrinter.isConnected ? thermalPrinter.disconnect : thermalPrinter.connect}
-                  disabled={thermalPrinter.isConnecting}
-                  className="h-11 px-4"
-                >
-                  {thermalPrinter.isConnecting ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : thermalPrinter.isConnected ? (
-                    <>
-                      <Usb className="h-4 w-4 mr-2" />
-                      Desconectar
-                    </>
-                  ) : (
-                    <>
-                      <Usb className="h-4 w-4 mr-2" />
-                      Conectar USB
-                    </>
-                  )}
-                </Button>
-              </div>
+
 
               {/* Error de impresora */}
               {thermalPrinter.error && (
@@ -1510,45 +1463,7 @@ export default function StaffDashboard() {
               )}
 
               {/* Opciones sin USB */}
-              {!thermalPrinter.isConnected && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-50 rounded-lg">
-                        <Eye className="h-4 w-4 text-cyan-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-700 text-sm">Mostrar vista previa</p>
-                        <p className="text-xs text-slate-500">Permite seleccionar impresora</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => savePrinterConfig({ ...printerConfig, showDialog: !printerConfig.showDialog })}
-                      className={cn(
-                        "w-12 h-7 rounded-full transition-colors relative",
-                        printerConfig.showDialog ? "bg-cyan-500" : "bg-slate-300"
-                      )}
-                    >
-                      <div className={cn(
-                        "absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform",
-                        printerConfig.showDialog ? "translate-x-6" : "translate-x-1"
-                      )} />
-                    </button>
-                  </div>
-
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-amber-800">
-                        <p className="font-medium">Consejo:</p>
-                        <p className="text-xs mt-1">
-                          Conecta la impresora USB para impresión directa sin diálogos.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Botón de seleccionar impresora/vista previa removido por requerimiento */}
             </div>
 
             <DialogFooter className="flex gap-2">
@@ -1560,16 +1475,7 @@ export default function StaffDashboard() {
                 Cancelar
               </Button>
               
-              {!thermalPrinter.isConnected && (
-                <Button 
-                  onClick={() => handlePrintReceipt(printTarget, true)}
-                  variant="outline"
-                  className="flex-1 h-12"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Vista Previa
-                </Button>
-              )}
+
               
               <Button 
                 onClick={() => handlePrintReceipt(printTarget, printerConfig.showDialog)}
