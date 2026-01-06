@@ -316,11 +316,12 @@ export default function LoginPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-4 bg-slate-50/30 pt-6">
+            {/* 
+            <CardFooter className="flex flex-col gap-4 bg-slate-50/30 pt-6">
             <div className="relative w-full">
               <Separator className="bg-slate-200" />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-xs text-muted-foreground font-medium rounded-full border border-slate-100">
-                PROTOTIPO
+              PROTOTIPO
               </span>
             </div>
             <p className="text-center text-xs text-slate-400">
@@ -328,16 +329,17 @@ export default function LoginPage() {
             </p>
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
               <Button variant="outline" asChild className="rounded-xl border-slate-200 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 transition-colors">
-                <Link href="/client">Cliente</Link>
+              <Link href="/client">Cliente</Link>
               </Button>
               <Button variant="outline" asChild className="rounded-xl border-slate-200 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 transition-colors">
-                <Link href="/staff">Personal</Link>
+              <Link href="/staff">Personal</Link>
               </Button>
               <Button variant="outline" asChild className="rounded-xl border-slate-200 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 transition-colors">
-                <Link href="/admin">Admin</Link>
+              <Link href="/admin">Admin</Link>
               </Button>
             </div>
-          </CardFooter>
+            </CardFooter>
+            */}
         </Card>
       </div>
 
