@@ -873,8 +873,26 @@ export default function StaffDashboard() {
             
             {/* Header - Compacto en pantallas grandes */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2">
-                <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-white drop-shadow-md">Panel del Personal</h1>
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-white drop-shadow-md flex items-center gap-3">
+                      Panel del Personal
+                      {/* Botón de impresora USB */}
+                      <Button
+                        variant={thermalPrinter.isConnected ? "outline" : "default"}
+                        size="sm"
+                        onClick={thermalPrinter.isConnected ? thermalPrinter.disconnect : thermalPrinter.connect}
+                        disabled={thermalPrinter.isConnecting}
+                        className={"flex items-center gap-2 h-9 px-3 text-xs " + (thermalPrinter.isConnected ? "border-green-400 text-green-700" : "border-slate-300 text-slate-600")}
+                        title={thermalPrinter.isConnected ? 'Desconectar impresora USB' : 'Conectar impresora USB'}
+                      >
+                        <Usb className={"h-4 w-4 " + (thermalPrinter.isConnected ? "text-green-600" : "text-slate-400")} />
+                        {thermalPrinter.isConnecting
+                          ? 'Conectando...'
+                          : thermalPrinter.isConnected
+                            ? (thermalPrinter.printerName || 'USB conectada')
+                            : 'Conectar USB'}
+                      </Button>
+                    </h1>
                     <p className="text-cyan-50 font-medium text-base lg:text-lg opacity-90">
                         Hola, {staffName || 'Colaborador'}. Aquí está el resumen de hoy.
                     </p>
