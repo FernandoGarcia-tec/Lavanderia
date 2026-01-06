@@ -1,0 +1,24 @@
+{
+  "name": "Lavandería Angy - Sistema POS",
+  "short_name": "Lavandería POS",
+  "description": "Sistema de punto de venta para Lavandería Angy",
+  "start_url": "/staff",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0891b2",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

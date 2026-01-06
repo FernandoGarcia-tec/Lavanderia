@@ -41,7 +41,9 @@ import {
   Sparkles,
   Zap,
   RefreshCw,
-  Printer
+  Printer,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -78,7 +80,8 @@ export default function StaffDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [openingAmount, setOpeningAmount] = useState<string>('');
   const [checking, setChecking] = useState(true);
-  const [isLoading, setIsLoading] = useState<string | null>(null); // ID del pedido en proceso
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const [orders, setOrders] = useState<Array<any>>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -806,6 +809,53 @@ export default function StaffDashboard() {
       );
   };
 
+  // --- Funciones de Pantalla Completa ---
+  const enterFullscreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if ((elem as any).webkitRequestFullscreen) {
+      (elem as any).webkitRequestFullscreen();
+    } else if ((elem as any).msRequestFullscreen) {
+      (elem as any).msRequestFullscreen();
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen();
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      enterFullscreen();
+    } else {
+      exitFullscreen();
+    }
+  };
+
+  // Detectar cambios en el estado de pantalla completa
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen font-sans p-3 md:p-6 lg:p-8 relative pos-mode">
         <div className="max-w-[1800px] mx-auto space-y-4 lg:space-y-6">
@@ -818,6 +868,25 @@ export default function StaffDashboard() {
                         Hola, {staffName || 'Colaborador'}. Aquí está el resumen de hoy.
                     </p>
                 </div>
+                {/* Botón de Pantalla Completa */}
+                <Button 
+                  onClick={toggleFullscreen} 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 hover:text-white rounded-xl shadow-md"
+                >
+                  {isFullscreen ? (
+                    <>
+                      <Minimize2 className="h-4 w-4 mr-2" />
+                      Salir Pantalla Completa
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="h-4 w-4 mr-2" />
+                      Pantalla Completa
+                    </>
+                  )}
+                </Button>
             </div>
 
             {/* Filtros - Grid optimizado para 1920px */}
@@ -1468,5 +1537,3 @@ export default function StaffDashboard() {
         </Dialog>
 
     </div>
-  );
-}
