@@ -580,16 +580,20 @@ export default function StaffDashboard() {
                 setPrintModalOpen(false);
                 setPrintTarget(null);
             } else {
+                // Si falla la impresión directa, abrir la ventana de impresión del navegador
+                window.print();
                 toast({ 
-                    title: "Error de impresión", 
-                    description: thermalPrinter.error || "No se pudo imprimir", 
+                    title: "Error de impresión USB", 
+                    description: thermalPrinter.error || "No se pudo imprimir por USB. Usando impresión estándar.", 
                     variant: "destructive" 
                 });
             }
         } catch (err: any) {
+            // Si ocurre un error, abrir la ventana de impresión del navegador
+            window.print();
             toast({ 
                 title: "Error de impresión", 
-                description: (err && err.message) || "No se pudo imprimir", 
+                description: (err && err.message) || "No se pudo imprimir. Usando impresión estándar.", 
                 variant: "destructive" 
             });
         }
