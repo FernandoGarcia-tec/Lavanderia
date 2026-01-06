@@ -589,11 +589,7 @@ export default function StaffDashboard() {
             }
         } catch (err: any) {
             printReceiptHTML(receiptData);
-            toast({ 
-                title: "Error de impresión", 
-                description: (err && err.message) || "No se pudo imprimir. Usando impresión estándar.", 
-                variant: "destructive" 
-            });
+            
         }
     // Imprimir recibo en ventana nueva (solo recibo)
     function printReceiptHTML(data: any) {
