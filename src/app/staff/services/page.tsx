@@ -364,7 +364,7 @@ export default function ServicesPage() {
     }
     const q = parseFloat(tempQuantity);
     if (isNaN(q) || q <= 0) {
-        toast({ title: "Cantidad inválida", description: "Ingresa un número mayor a 0", variant: "destructive" });
+        toast({ title: "Cantidad invalida", description: "Ingresa un número mayor a 0", variant: "destructive" });
         return;
     }
 
