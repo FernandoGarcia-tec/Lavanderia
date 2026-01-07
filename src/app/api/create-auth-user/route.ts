@@ -22,6 +22,7 @@ function initAdmin() {
   const envJson = process.env.SERVICE_ACCOUNT_KEY;
   const envPath = process.env.SERVICE_ACCOUNT_PATH || './serviceAccountKey.json';
   console.log('initAdmin: SERVICE_ACCOUNT_PATH=', envPath, 'SERVICE_ACCOUNT_KEY present=', !!envJson);
+  console.log('SERVICE_ACCOUNT_KEY length:', process.env.SERVICE_ACCOUNT_KEY?.length);
   const adminMod = loadAdmin();
   console.log('initAdmin: loaded adminMod, adminMod.apps?.length=', adminMod?.apps?.length);
   if (adminMod && adminMod.apps && adminMod.apps.length) return;
