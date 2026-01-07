@@ -1,3 +1,4 @@
+  console.log('TEST_VAR:', process.env.TEST_VAR);
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 // Load firebase-admin dynamically at runtime to avoid bundler issues
