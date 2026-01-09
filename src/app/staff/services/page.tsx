@@ -267,7 +267,19 @@ export default function ServicesPage() {
       
       // --- FIX: Asegurar guardado de teléfono en users ---
       if (newClientPhone.trim() && j.docId) {
-          await setDoc(doc(firestore, 'users', j.docId), { phone: newClientPhone.trim() }, { merge: true });
+        await setDoc(doc(firestore, 'users', j.docId), { phone: newClientPhone.trim() }, { merge: true });
+      }
+
+      // Genera el email ficticio si no hay email real
+      let finalEmail = newClientEmail.trim();
+      let cleanPhone = newClientPhone.trim().replace(/[^0-9]/g, '');
+      if (!finalEmail && newClientPhone.trim()) {
+        finalEmail = `${cleanPhone}@lavanderia.angy`;
+      }
+
+      // --- NUEVO: Guardar email ficticio en Firestore si no hay email real ---
+      if (j.docId && finalEmail) {
+        await setDoc(doc(firestore, 'users', j.docId), { email: finalEmail }, { merge: true });
       }
 
       // Crear notificación de bienvenida para el nuevo cliente
@@ -302,13 +314,6 @@ export default function ServicesPage() {
         }
       }
 
-      // Genera el email ficticio si no hay email real
-      let finalEmail = newClientEmail.trim();
-      let cleanPhone = newClientPhone.trim().replace(/[^0-9]/g, '');
-      if (!finalEmail && newClientPhone.trim()) {
-        finalEmail = `${cleanPhone}@lavanderia.angy`;
-      }
-
       // Enviar WhatsApp de bienvenida (si tiene teléfono)
       if (newClientPhone.trim()) {
         try {
@@ -334,7 +339,7 @@ export default function ServicesPage() {
       const newClient = { 
         id: clientDocId, 
         name: newClientName.trim(), 
-        email: newClientEmail.trim(), 
+        email: finalEmail, // <-- Usar el email real o ficticio aquí
         phone: newClientPhone.trim() 
       };
       
