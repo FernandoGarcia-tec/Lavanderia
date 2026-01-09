@@ -1,4 +1,4 @@
-  console.log('TEST_VAR:', process.env.TEST_VAR);
+console.log('TEST_VAR:', process.env.TEST_VAR);
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 // Load firebase-admin dynamically at runtime to avoid bundler issues
@@ -37,22 +37,45 @@ export async function POST(req: Request) {
   try {
     initAdmin();
     const body = await req.json();
-    const { name, email, role, defaultPassword } = body || {};
-    if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 });
+    const { name, email, phone, role, defaultPassword } = body || {};
+
+    if (!email && !phone) {
+      return NextResponse.json({ error: 'Se requiere al menos correo o teléfono.' }, { status: 400 });
+    }
 
     const adminMod = loadAdmin();
-    console.log('POST: adminMod loaded, apps length=', adminMod?.apps?.length);
     const auth = adminMod.auth();
     const db = adminMod.firestore();
 
-    // create auth user
+    // Crear usuario según el campo disponible
     let userRecord;
     try {
-      userRecord = await auth.createUser({ email, password: defaultPassword || 'Cambio123!', displayName: name || undefined });
+      if (email) {
+        userRecord = await auth.createUser({
+          email,
+          password: defaultPassword || 'Cambio123!',
+          displayName: name || undefined,
+        });
+      } else if (phone) {
+        // Formatea el teléfono a internacional si es necesario
+        let phoneNumber = phone.replace(/[^0-9]/g, '');
+        if (!phoneNumber.startsWith('52')) phoneNumber = '52' + phoneNumber;
+        phoneNumber = '+' + phoneNumber;
+        userRecord = await auth.createUser({
+          phoneNumber,
+          password: defaultPassword || 'Cambio123!',
+          displayName: name || undefined,
+        });
+      }
     } catch (err: any) {
-      // If user already exists, try to fetch it
-      if (err.code === 'auth/email-already-exists') {
+      // Si el usuario ya existe, intenta obtenerlo
+      if (email && err.code === 'auth/email-already-exists') {
         userRecord = await auth.getUserByEmail(email);
+      } else if (phone && err.code === 'auth/phone-number-already-exists') {
+        let phoneNumber = phone.replace(/[^0-9]/g, '');
+        if (!phoneNumber.startsWith('52')) phoneNumber = '52' + phoneNumber;
+        phoneNumber = '+' + phoneNumber;
+        userRecord = await auth.getUserByPhoneNumber(phoneNumber);
       } else {
         throw err;
       }
@@ -64,10 +87,10 @@ export async function POST(req: Request) {
     // Create or update Firestore user doc using the exact Auth UID as document ID
     const userDocRef = db.collection('users').doc(userRecord.uid);
     const now = admin.firestore.FieldValue.serverTimestamp();
-    // Use set with merge to create or update the doc at users/{uid}
     await userDocRef.set({
       name: name || '',
-      email,
+      email: email || null,
+      phone: phone || null,
       role: role || 'client',
       status: 'aprobado',
       authUid: userRecord.uid,
@@ -76,12 +99,14 @@ export async function POST(req: Request) {
     }, { merge: true });
     const docRef = userDocRef;
 
-    // generate password reset link to send to user (recommended)
+    // generate password reset link to send to user (solo si hay email)
     let resetLink = null;
-    try {
-      resetLink = await auth.generatePasswordResetLink(email, { url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002' });
-    } catch (e) {
-      // ignore
+    if (email) {
+      try {
+        resetLink = await auth.generatePasswordResetLink(email, { url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002' });
+      } catch (e) {
+        // ignore
+      }
     }
 
     return NextResponse.json({ ok: true, uid: userRecord.uid, docId: docRef.id, resetLink });
