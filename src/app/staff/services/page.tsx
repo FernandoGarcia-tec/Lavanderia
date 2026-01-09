@@ -302,11 +302,17 @@ export default function ServicesPage() {
         }
       }
 
+      // Genera el email ficticio si no hay email real
+      let finalEmail = newClientEmail.trim();
+      let cleanPhone = newClientPhone.trim().replace(/[^0-9]/g, '');
+      if (!finalEmail && newClientPhone.trim()) {
+        finalEmail = `${cleanPhone}@lavanderia.angy`;
+      }
+
       // Enviar WhatsApp de bienvenida (si tiene teléfono)
       if (newClientPhone.trim()) {
         try {
-          // Formatea el número a internacional (ej: +521XXXXXXXXXX)
-          let phone = newClientPhone.trim().replace(/[^0-9]/g, '');
+          let phone = cleanPhone;
           if (!phone.startsWith('52')) phone = '52' + phone;
           phone = '+' + phone;
 
@@ -315,7 +321,7 @@ export default function ServicesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               to: phone,
-              body: `¡Hola ${newClientName.trim()}! 👋\n\nTu cuenta en Lavandería Angy ha sido creada.\n\nPara ingresar:\n1. Ve a https://lavanderiaangy.vercel.app\n2. Inicia sesión con tu correo o teléfono registrado.\n3. Tu contraseña temporal es: ${defaultPass}\n\nCámbiala después de tu primer acceso.\n\n¡Ya puedes programar tus servicios de lavandería o Revisar el status de tu ropa!`
+              body: `¡Hola ${newClientName.trim()}! 👋\n\nTu cuenta en Lavandería Angy ha sido creada.\n\nPara ingresar:\n1. Ve a https://lavanderiaangy.vercel.app\n2. Inicia sesión con tu correo: ${finalEmail}\n3. Tu contraseña temporal es: ${defaultPass}\n\nCámbiala después de tu primer acceso.\n\n¡Ya puedes programar tus servicios de lavandería o revisar el status de tu ropa!`
             }),
           });
           toast({ title: "📱 WhatsApp enviado", description: "Se envió el mensaje de bienvenida por WhatsApp." });

@@ -50,23 +50,20 @@ export async function POST(req: Request) {
     // Crear usuario según el campo disponible
     let userRecord;
     try {
-      if (email) {
-        userRecord = await auth.createUser({
-          email,
-          password: defaultPassword || 'Cambio123!',
-          displayName: name || undefined,
-        });
-      } else if (phone) {
-        // Formatea el teléfono a internacional si es necesario
-        let phoneNumber = phone.replace(/[^0-9]/g, '');
-        if (!phoneNumber.startsWith('52')) phoneNumber = '52' + phoneNumber;
-        phoneNumber = '+' + phoneNumber;
-        userRecord = await auth.createUser({
-          phoneNumber,
-          password: defaultPassword || 'Cambio123!',
-          displayName: name || undefined,
-        });
+      let finalEmail = email;
+      let cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+      if (!finalEmail && phone) {
+        // Genera un email ficticio único para el teléfono
+        finalEmail = `${cleanPhone}@lavanderia.angy`;
       }
+
+      // Luego usa finalEmail en vez de email en la creación:
+      userRecord = await auth.createUser({
+        email: finalEmail,
+        password: defaultPassword || 'Cambio123!',
+        displayName: name || undefined,
+        ...(phone ? { phoneNumber: '+' + (cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone) } : {}),
+      });
     } catch (err: any) {
       // Si el usuario ya existe, intenta obtenerlo
       if (email && err.code === 'auth/email-already-exists') {
