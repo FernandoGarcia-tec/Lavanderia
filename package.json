@@ -57,6 +57,7 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "twilio": "^5.11.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -64,6 +65,7 @@
     "@types/nodemailer": "^7.0.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/twilio": "^3.19.2",
     "@types/w3c-web-usb": "^1.0.13",
     "genkit-cli": "^1.20.0",
     "postcss": "^8",

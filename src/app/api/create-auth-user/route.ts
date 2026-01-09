@@ -21,26 +21,16 @@ import path from 'path';
 
 function initAdmin() {
   const envJson = process.env.SERVICE_ACCOUNT_KEY;
-  const envPath = process.env.SERVICE_ACCOUNT_PATH || './serviceAccountKey.json';
-  console.log('initAdmin: SERVICE_ACCOUNT_PATH=', envPath, 'SERVICE_ACCOUNT_KEY present=', !!envJson);
+  console.log('initAdmin: SERVICE_ACCOUNT_KEY present=', !!envJson);
   console.log('SERVICE_ACCOUNT_KEY length:', envJson ? envJson.length : 'undefined');
-  console.log('SERVICE_ACCOUNT_KEY length:', process.env.SERVICE_ACCOUNT_KEY?.length);
   const adminMod = loadAdmin();
   console.log('initAdmin: loaded adminMod, adminMod.apps?.length=', adminMod?.apps?.length);
   if (adminMod && adminMod.apps && adminMod.apps.length) return;
-  if (envJson) {
-    const credentialObj = JSON.parse(envJson);
-    adminMod.initializeApp({ credential: adminMod.credential.cert(credentialObj) });
-  } else {
-    const p = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
-    if (!fs.existsSync(p)) {
-      throw new Error(`Service account file not found at ${p}. Set SERVICE_ACCOUNT_PATH or SERVICE_ACCOUNT_KEY.`);
-    }
-    const raw = fs.readFileSync(p, 'utf8');
-    const sa = JSON.parse(raw);
-    adminMod.initializeApp({ credential: adminMod.credential.cert(sa) });
-    console.log('initAdmin: adminMod.apps after initialize=', adminMod.apps?.length);
+  if (!envJson) {
+    throw new Error('SERVICE_ACCOUNT_KEY environment variable not set. Please configure it in Vercel.');
   }
+  const credentialObj = JSON.parse(envJson);
+  adminMod.initializeApp({ credential: adminMod.credential.cert(credentialObj) });
 }
 
 export async function POST(req: Request) {
