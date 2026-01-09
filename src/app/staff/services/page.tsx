@@ -302,6 +302,29 @@ export default function ServicesPage() {
         }
       }
 
+      // Enviar WhatsApp de bienvenida (si tiene teléfono)
+      if (newClientPhone.trim()) {
+        try {
+          // Formatea el número a internacional (ej: +521XXXXXXXXXX)
+          let phone = newClientPhone.trim().replace(/[^0-9]/g, '');
+          if (!phone.startsWith('52')) phone = '52' + phone;
+          phone = '+' + phone;
+
+          await fetch('/api/twilio-test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: phone,
+              body: `¡Hola ${newClientName.trim()}! 👋\n\nTu cuenta en Lavandería Angy ha sido creada.\n\nPara ingresar:\n1. Ve a https://lavanderiaangy.vercel.app\n2. Inicia sesión con tu correo o teléfono registrado.\n3. Tu contraseña temporal es: ${defaultPass}\n\nCámbiala después de tu primer acceso.\n\n¡Ya puedes programar tus servicios de lavandería o Revisar el status de tu ropa!`
+            }),
+          });
+          toast({ title: "📱 WhatsApp enviado", description: "Se envió el mensaje de bienvenida por WhatsApp." });
+        } catch (waErr) {
+          console.error('Error enviando WhatsApp:', waErr);
+          // No interrumpir el flujo si falla el WhatsApp
+        }
+      }
+
       const newClient = { 
         id: clientDocId, 
         name: newClientName.trim(), 
