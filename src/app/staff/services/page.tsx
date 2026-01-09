@@ -318,7 +318,15 @@ export default function ServicesPage() {
       if (newClientPhone.trim()) {
         try {
           let phone = cleanPhone;
-          if (!phone.startsWith('52')) phone = '52' + phone;
+          // Fuerza el formato +521XXXXXXXXXX
+          if (!phone.startsWith('521')) {
+            // Si ya empieza con '52', lo convierte a '521'
+            if (phone.startsWith('52')) {
+              phone = '521' + phone.slice(2);
+            } else {
+              phone = '521' + phone;
+            }
+          }
           phone = '+' + phone;
 
           await fetch('/api/twilio-test', {
