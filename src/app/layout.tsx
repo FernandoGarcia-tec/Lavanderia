@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: 'Lavanderia ANGY',
   description: 'Desarrollo de software para la gestión de lavandería ANGY por José Fernando Garcia Quintero',
   manifest: '/manifest.json',
-  themeColor: '#0891b2',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -18,6 +17,9 @@ export const metadata: Metadata = {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧺</text></svg>",
     apple: '/icon-192.png',
   },
+};
+export const viewport = {
+  themeColor: '#0891b2',
 };
 
 export default function RootLayout({

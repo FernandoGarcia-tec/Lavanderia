@@ -758,7 +758,6 @@ export default function ServicesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
         {/* COLUMNA IZQUIERDA: FORMULARIO */}
         <div className="lg:col-span-8 space-y-6">
             
@@ -842,20 +841,20 @@ export default function ServicesPage() {
 
             {/* 2. AGREGAR SERVICIOS */}
             <Card className="border-slate-200 shadow-sm">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg lg:text-xl flex items-center gap-2">
-                        <Package className="h-5 w-5 lg:h-6 lg:w-6 text-cyan-600" />
-                        Servicios y Prendas
-                    </CardTitle>
-                    {cart.length > 0 && (
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-sm px-3 py-1">
-                            {cart.length} ítem{cart.length !== 1 ? 's' : ''}
-                        </Badge>
-                    )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Grid de selección - Optimizado para táctil */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-lg lg:text-xl flex items-center gap-2">
+                  <Package className="h-5 w-5 lg:h-6 lg:w-6 text-cyan-600" />
+                  Servicios y Prendas
+                </CardTitle>
+                {cart.length > 0 && (
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-sm px-3 py-1">
+                    {cart.length} ítem{cart.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Grid de selección - Optimizado para táctil */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
                         {servicesList.map((s) => {
                             const isSelected = tempServiceId === s.id && !isCustomMode;
                             const icon = Object.keys(serviceIcons).find(key => s.name.includes(key)) 
@@ -984,42 +983,44 @@ export default function ServicesPage() {
                         )}
                     </div>
 
-                    {/* Lista de ítems en el carrito - Optimizado para táctil */}
+                    {/* Lista de ítems en el carrito - Optimizado para táctil y tablets */}
                     {cart.length > 0 ? (
-                        <div className="space-y-3">
-                            <Label className="text-slate-600 text-sm lg:text-base">Servicios Agregados</Label>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                                {cart.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center p-4 lg:p-5 bg-white hover:bg-slate-50 transition-colors min-h-[70px]">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex items-center justify-center ${item.isCustom ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>
-                                                {item.isCustom ? <PenTool className="w-5 h-5 lg:w-6 lg:h-6" /> : 
-                                                 (Object.keys(serviceIcons).find(key => item.serviceName.includes(key)) 
-                                                    ? serviceIcons[Object.keys(serviceIcons).find(key => item.serviceName.includes(key))!] 
-                                                    : serviceIcons['default'])}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-slate-800 text-sm lg:text-base">{item.serviceName} {item.isCustom && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Manual</span>}</p>
-                                                <p className="text-xs lg:text-sm text-slate-500">
-                                                    {item.quantity} {item.unit === 'kg' ? 'kg' : 'pza'} x ${item.priceUnit}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 lg:gap-5">
-                                            <span className="font-semibold text-slate-700 text-base lg:text-lg">${item.subtotal.toFixed(2)}</span>
-                                            <button onClick={() => handleRemoveFromCart(index)} className="text-slate-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                      <div className="space-y-3">
+                        <Label className="text-slate-600 text-sm lg:text-base">Servicios Agregados</Label>
+                        <div className="border border-slate-200 rounded-xl overflow-x-auto divide-y divide-slate-100">
+                          <div className="min-w-[520px]">
+                          {cart.map((item, index) => (
+                            <div key={index} className="flex flex-wrap md:flex-nowrap justify-between items-center p-4 lg:p-5 bg-white hover:bg-slate-50 transition-colors min-h-[70px]">
+                              <div className="flex items-center gap-4 min-w-[180px]">
+                                <div className={`h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex items-center justify-center ${item.isCustom ? 'bg-amber-50 text-amber-600' : 'bg-cyan-50 text-cyan-600'}`}>
+                                  {item.isCustom ? <PenTool className="w-5 h-5 lg:w-6 lg:h-6" /> : 
+                                   (Object.keys(serviceIcons).find(key => item.serviceName.includes(key)) 
+                                    ? serviceIcons[Object.keys(serviceIcons).find(key => item.serviceName.includes(key))!] 
+                                    : serviceIcons['default'])}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-slate-800 text-sm lg:text-base">{item.serviceName} {item.isCustom && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Manual</span>}</p>
+                                  <p className="text-xs lg:text-sm text-slate-500">
+                                    {item.quantity} {item.unit === 'kg' ? 'kg' : 'pza'} x ${item.priceUnit}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 lg:gap-5 mt-2 md:mt-0">
+                                <span className="font-semibold text-slate-700 text-base lg:text-lg">${item.subtotal.toFixed(2)}</span>
+                                <button onClick={() => handleRemoveFromCart(index)} className="text-slate-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              </div>
                             </div>
+                          ))}
+                          </div>
                         </div>
+                      </div>
                     ) : (
-                        <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl">
-                            <ShoppingBasket className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                            <p className="text-sm lg:text-base text-slate-400">Aún no has agregado servicios al pedido.</p>
-                        </div>
+                      <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl">
+                        <ShoppingBasket className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                        <p className="text-sm lg:text-base text-slate-400">Aún no has agregado servicios al pedido.</p>
+                      </div>
                     )}
 
                     <div className="space-y-2 pt-2">
