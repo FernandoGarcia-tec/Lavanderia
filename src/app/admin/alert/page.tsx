@@ -35,6 +35,28 @@ export default function AlertsPage() {
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [inventoryNotifications, setInventoryNotifications] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [notifiedInventoryIds, setNotifiedInventoryIds] = useState<Set<string>>(new Set());
+  const [notifiedUserIds, setNotifiedUserIds] = useState<Set<string>>(new Set());
+
+  // Función para enviar alertas por WhatsApp al admin
+  const sendAdminWhatsAppAlert = async (message: string) => {
+    try {
+      await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'alert',
+          channel: 'whatsapp',
+          to: { phone: '3121061790' },
+          name: 'Administrador',
+          status: 'alerta',
+          customMessage: message
+        }),
+      });
+    } catch (error) {
+      console.error('Error enviando alerta WhatsApp:', error);
+    }
+  };
 
   useEffect(() => {
     if (!firestore) return;
@@ -50,6 +72,20 @@ export default function AlertsPage() {
         return qty <= min; // Incluye agotados (0) y bajos
       });
       setInventoryAlerts(low);
+
+      // Enviar alerta por WhatsApp si hay nuevos items críticos
+      low.forEach(item => {
+        if (!notifiedInventoryIds.has(item.id)) {
+          const qty = Number(item.quantity ?? item.stock ?? 0);
+          const isOut = qty === 0;
+          const message = isOut 
+            ? `🚨 *ALERTA CRÍTICA - Lavandería Angy*\n\n❌ *Producto AGOTADO*\n📦 ${item.name || 'Producto'}\n\n⚠️ Stock actual: 0\n📊 Mínimo requerido: ${item.minThreshold ?? 0}\n\n🔴 Requiere reposición INMEDIATA`
+            : `⚠️ *ALERTA - Lavandería Angy*\n\n📦 *Stock Bajo*\n${item.name || 'Producto'}\n\n📊 Stock actual: ${qty}\n📌 Mínimo: ${item.minThreshold ?? 0}\n\n🟡 Considere reponer pronto`;
+          
+          sendAdminWhatsAppAlert(message);
+          setNotifiedInventoryIds(prev => new Set(prev).add(item.id));
+        }
+      });
     });
 
     // 2. Usuarios Pendientes
@@ -58,6 +94,16 @@ export default function AlertsPage() {
       const items: any[] = [];
       snap.forEach((d: any) => items.push({ id: d.id, ...d.data() }));
       setPendingUsers(items);
+
+      // Enviar alerta por WhatsApp si hay nuevos usuarios pendientes
+      items.forEach(user => {
+        if (!notifiedUserIds.has(user.id)) {
+          const message = `👤 *NUEVO USUARIO - Lavandería Angy*\n\n✨ *Solicitud de Registro*\n\n👤 Nombre: ${user.name || 'Sin nombre'}\n📧 Email: ${user.email || 'No proporcionado'}\n📱 Teléfono: ${user.phone || 'No proporcionado'}\n\n⏳ Estado: Pendiente de aprobación\n\n💡 Revise el panel de administración para aprobar o rechazar.`;
+          
+          sendAdminWhatsAppAlert(message);
+          setNotifiedUserIds(prev => new Set(prev).add(user.id));
+        }
+      });
     });
 
     // 3. Notificaciones Manuales/Automáticas de Inventario (Colección 'alerts')

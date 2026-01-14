@@ -97,11 +97,76 @@ const whatsappTemplates = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, channel, to, name, status } = body;
+    const { type, channel, to, name, status, customMessage } = body;
 
     // Validaciones
-    if (!to || !name || !status) {
+    if (!to || !name) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos' }, { status: 400 });
+    }
+
+    // Si hay mensaje personalizado, usarlo directamente
+    if (customMessage) {
+      const results: { email?: boolean; whatsapp?: boolean; errors?: string[] } = { errors: [] };
+
+      // Enviar WhatsApp con mensaje personalizado
+      if (channel === 'whatsapp' || channel === 'both') {
+        if (!to.phone) {
+          results.errors?.push('No se proporcionó número de teléfono');
+        } else if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+          results.errors?.push('Twilio no está configurado');
+        } else {
+          try {
+            const accountSid = process.env.TWILIO_ACCOUNT_SID;
+            const authToken = process.env.TWILIO_AUTH_TOKEN;
+            const twilioPhone = process.env.TWILIO_WHATSAPP_NUMBER;
+
+            let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
+            if (!phoneNumber.startsWith('+')) {
+              phoneNumber = '+521' + phoneNumber;
+            }
+
+            const response = await fetch(
+              `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  From: twilioPhone || 'whatsapp:+14155238886',
+                  To: `whatsapp:${phoneNumber}`,
+                  Body: customMessage,
+                }),
+              }
+            );
+
+            if (response.ok) {
+              results.whatsapp = true;
+            } else {
+              const errorData = await response.json();
+              results.errors?.push(`WhatsApp: ${errorData.message || 'Error desconocido'}`);
+            }
+          } catch (waError: any) {
+            console.error('Error enviando WhatsApp:', waError);
+            results.errors?.push(`WhatsApp: ${waError.message}`);
+          }
+        }
+      }
+
+      if (results.errors?.length === 0) {
+        delete results.errors;
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        ...results,
+        message: results.whatsapp ? 'Notificación enviada' : 'No se pudo enviar la notificación'
+      });
+    }
+
+    if (!status) {
+      return NextResponse.json({ error: 'Falta el parámetro status' }, { status: 400 });
     }
 
     const template = status === 'aprobado' ? 'approved' : 'rejected';
@@ -143,7 +208,7 @@ export async function POST(req: NextRequest) {
           // Formatear número de teléfono (agregar código de país si no lo tiene)
           let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
           if (!phoneNumber.startsWith('+')) {
-            phoneNumber = '+52' + phoneNumber; // Código de México por defecto
+            phoneNumber = '+521' + phoneNumber; // Código de México por defecto para WhatsApp
           }
 
           const response = await fetch(
