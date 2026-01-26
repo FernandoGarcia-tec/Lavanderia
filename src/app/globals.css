@@ -30,6 +30,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 210 10% 14%;
     --foreground: 0 0% 98%;
@@ -76,17 +77,40 @@
 
     @apply relative w-[30px] h-[30px] bg-white/20 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.2),0_0_20px_#fff,0_0_40px_#fff] animate-bubble;
     animation-duration:  calc(125s / var(--i));
-    left: unset;
-    right: unset;
-    /* Distribución y aleatoriedad */
-    position: absolute;
-    bottom: 150px;
-    left: calc(var(--i) * 8% + (10px * var(--i)));
-    animation-delay: calc(-1s * var(--i));
-    /* Puedes ajustar los valores para más aleatoriedad */
+      @apply relative bg-white/20 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.2),0_0_20px_#fff,0_0_40px_#fff];
+      position: absolute;
+      bottom: 150px;
+      left: calc(var(--i) * 8% + (10px * var(--i)));
+      animation: bubble var(--bubble-duration, 20s) linear infinite;
+      animation-delay: var(--bubble-delay, 0s);
+      width: var(--bubble-size, 30px);
+    height: var(--bubble-size, 30px);
   }
-}
 
+  @keyframes bubble {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.7;
+      transform: translateY(-80vh) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100vh) scale(1.2);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .bubbles span {
+      bottom: 40px;
+      left: calc(var(--i) * 7% + (5px * var(--i)));
+      width: var(--bubble-size, 18px);
+      height: var(--bubble-size, 18px);
+      animation-duration: var(--bubble-duration, 14s);
+    }
+  }
 /* Ocultar el badge flotante de Next.js Dev Tools en desarrollo */
 [data-next-badge],
 button[data-nextjs-dev-tools-button],
@@ -267,3 +291,4 @@ nextjs-devtools,
   }
 }
 
+  }
