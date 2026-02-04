@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
                   'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                  From: twilioPhone || 'whatsapp:+14155238886',
+                  From: (twilioPhone || process.env.TWILIO_WHATSAPP_NUMBER) as string,
                   To: `whatsapp:${phoneNumber}`,
                   Body: customMessage,
                 }),
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
         try {
           const accountSid = process.env.TWILIO_ACCOUNT_SID;
           const authToken = process.env.TWILIO_AUTH_TOKEN;
-          const twilioPhone = process.env.TWILIO_WHATSAPP_NUMBER; // formato: whatsapp:+14155238886
+          const twilioPhone = process.env.TWILIO_WHATSAPP_NUMBER; // formato: whatsapp:+18548886949
 
           // Formatear número de teléfono (agregar código de país si no lo tiene)
           let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
               body: new URLSearchParams({
-                From: twilioPhone || 'whatsapp:+14155238886',
+                From: (twilioPhone || process.env.TWILIO_WHATSAPP_NUMBER) as string,
                 To: `whatsapp:${phoneNumber}`,
                 Body: whatsappTemplates[template](name),
               }),
