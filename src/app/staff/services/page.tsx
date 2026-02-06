@@ -473,7 +473,7 @@ export default function ServicesPage() {
           body {
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 900;
             color: #000000;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -656,6 +656,9 @@ export default function ServicesPage() {
           window.onload = function() {
             window.print();
             setTimeout(function() { window.close(); }, 500);
+          };
+          window.onafterprint = function() {
+            window.close();
           };
         </script>
       </body>
