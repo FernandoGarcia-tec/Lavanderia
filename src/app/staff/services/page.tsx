@@ -645,6 +645,8 @@ export default function ServicesPage() {
         
         <div class="footer">
           <div>¡Gracias por su preferencia!</div>
+          <div>Puede revisar su servicio en nuestro sitio web</div>
+          <div>lavanderiaangy.vercel.app/</div>
           <div style="margin-top: 4px;">Conserve este ticket</div>
         </div>
         
