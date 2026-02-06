@@ -649,6 +649,9 @@ export default function ServicesPage() {
           <div>Puede revisar su servicio en nuestro sitio web</div>
           <div>lavanderiaangy.vercel.app/</div>
           <div style="margin-top: 4px;">Conserve este ticket</div>
+          <div>.     </div>
+          <div>.      </div>
+          <div>.      </div>
         </div>
         
         </div>`;
