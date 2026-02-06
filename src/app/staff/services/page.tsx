@@ -462,11 +462,13 @@ export default function ServicesPage() {
           }
           @page {
             size: 58mm auto;
-            margin: 0mm 2mm 0mm 2mm;
+            margin: 0mm;
           }
           html, body {
             width: 58mm;
-            margin: 0 auto;
+            margin: 0;
+            padding: 0;
+            height: auto;
           }
           body {
             font-family: 'Courier New', Courier, monospace;
@@ -475,8 +477,9 @@ export default function ServicesPage() {
             color: #000000;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            padding: 2mm 3mm;
-            line-height: 1.5;
+            padding: 2mm 3mm 3mm 3mm;
+            line-height: 1.3;
+            height: auto;
           }
           .receipt-container {
             width: 100%;
@@ -487,15 +490,15 @@ export default function ServicesPage() {
           .bold { font-weight: 900; }
           .separator {
             border-top: 2px dashed #000000;
-            margin: 5px 0;
+            margin: 3px 0;
           }
           .double-separator {
             border-top: 3px solid #000000;
-            margin: 6px 0;
+            margin: 4px 0;
           }
           .header {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
           }
           .logo {
             font-size: 18px;
@@ -535,9 +538,10 @@ export default function ServicesPage() {
           }
           .footer {
             text-align: center;
-            margin-top: 10px;
-            font-size: 11px;
+            margin-top: 4px;
+            font-size: 10px;
             font-weight: bold;
+            line-height: 1.2;
           }
           .order-id {
             font-size: 16px;
@@ -554,12 +558,19 @@ export default function ServicesPage() {
           }
           @media print {
             html, body { 
-              width: 58mm; 
+              width: 58mm;
+              height: auto;
+              margin: 0;
+              padding: 0;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
             .receipt-container {
               width: 100%;
+              page-break-after: avoid;
+            }
+            body {
+              padding-bottom: 3mm;
             }
           }
         </style>
@@ -634,8 +645,6 @@ export default function ServicesPage() {
         
         <div class="footer">
           <div>¡Gracias por su preferencia!</div>
-          <div>Puede revisar su servicio en nuestro sitio web</div>
-          <div>lavanderiaangy.vercel.app/</div>
           <div style="margin-top: 4px;">Conserve este ticket</div>
         </div>
         
