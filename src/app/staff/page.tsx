@@ -623,6 +623,7 @@ export default function StaffDashboard() {
       estimatedTotal: Number(order.estimatedTotal || 0),
       paymentMethod: order.paymentMethod || 'efectivo',
       deliveryDate: order.deliveryDate?.toDate ? order.deliveryDate.toDate() : new Date(),
+      deliveryTimeStr: order.deliveryTimeStr || '',
       createdAt: order.createdAt?.toDate ? order.createdAt.toDate() : new Date(),
       notes: order.notes,
       amountPaid: order.amountPaid,
@@ -673,47 +674,208 @@ export default function StaffDashboard() {
         <meta charset="utf-8">
         <title>Recibo #${data.id}</title>
         <style>
-          @page { size: 58mm auto; margin: 0; }
-          html, body { width: 58mm; margin: 0; padding: 0; height: auto; }
-          body { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; margin: 0; padding: 2mm 3mm 3mm 3mm; line-height: 1.2; font-weight: 900; height: auto; }
-          .r { text-align: right; }
-          .c { text-align: center; }
-          .b { font-weight: 900; }
-          .s { font-size: 9px; }
-          .box { border-top:1px dashed #000; margin:3px 0; }
-          .spacer { height: 2px; }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          @page {
+            size: 58mm auto;
+            margin: 0mm;
+          }
+          html, body {
+            width: 58mm;
+            margin: 0;
+            padding: 0;
+            height: auto;
+          }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            font-weight: 900;
+            color: #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 2mm 3mm 3mm 3mm;
+            line-height: 1.3;
+            height: auto;
+          }
+          .receipt-container {
+            width: 100%;
+            max-width: 52mm;
+            margin: 0 auto;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: 900; }
+          .separator {
+            border-top: 2px dashed #000000;
+            margin: 3px 0;
+          }
+          .double-separator {
+            border-top: 3px solid #000000;
+            margin: 4px 0;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 5px;
+          }
+          .logo {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #000000;
+          }
+          .subtitle {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000000;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: bold;
+          }
+          .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 0;
+          }
+          .item-name {
+            max-width: 60%;
+            word-wrap: break-word;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 900;
+            margin-top: 4px;
+            color: #000000;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            line-height: 1.2;
+          }
+          .order-id {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #000000;
+          }
+          .notes {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 4px;
+            padding: 4px;
+            border: 1px solid #000;
+          }
+          @media print {
+            html, body { 
+              width: 58mm;
+              height: auto;
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .receipt-container {
+              width: 100%;
+              page-break-after: avoid;
+            }
+            body {
+              padding-bottom: 3mm;
+            }
+          }
         </style>
       </head>
       <body>
-        <div class="c b">LAVANDERÍA Y PLANCHADURIA ANGY</div>
-        <div class="c s">Servicio de Calidad</div>
-        <div class="box"></div>
-        <div class="c b">Folio: ${(data.id || '').slice(0,6).toUpperCase()}</div>
-        <div class="c s">${data.createdAt ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt.toLocaleString ? data.createdAt.toLocaleString('es-MX') : '')) : ''}</div>
-        <div class="box"></div>
-        <div>Cliente: <span class="b">${data.clientName || ''}</span></div>
-        ${data.clientPhone ? `<div>Tel: ${data.clientPhone}</div>` : ''}
-        <div>Atendió: ${data.staffName || ''}</div>
-        <div class="box"></div>
-        <div class="b">SERVICIOS:</div>
-        ${(data.items || []).map((item: any) => `
-          <div><span>${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span><span class="r">$${Number(item.subtotal).toFixed(2)}</span></div>
-        `).join('')}
-        <div class="box"></div>
-        <div class="b">TOTAL: $${Number(data.estimatedTotal || 0).toFixed(2)}</div>
-        <div>Pago: ${paymentLabels[data.paymentMethod] || data.paymentMethod || ''}</div>
-        <div class="box"></div>
-        <div>ENTREGA: <span class="b">${data.deliveryDate ? (typeof data.deliveryDate === 'string' ? data.deliveryDate : (data.deliveryDate.toLocaleDateString ? data.deliveryDate.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '')) : ''}</span></div>
-        ${data.notes ? `<div class="s">Notas: ${data.notes}</div>` : ''}
-        <div class="box"></div>
-        <div class="c s">¡Gracias por su preferencia!</div>
-        <div class="c s">lavanderiaangy.vercel.app</div>
-        <div class="c s">Conserve este ticket</div>
-        <div class="spacer"></div>
+        <div class="receipt-container">
+        <div class="header">
+          <div class="logo">LAVANDERÍA Y PLANCHADURIA ANGY</div>
+          <div class="subtitle">Servicio de Calidad</div>
+        </div>
+        
+        <div class="double-separator"></div>
+        
+        <div class="center">
+          <div class="order-id">Folio: ${(data.id || '').slice(0,6).toUpperCase()}</div>
+          <div style="font-size: 10px;">${format(data.createdAt, "dd/MM/yyyy HH:mm")}</div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="info-row">
+            <span>Cliente:</span>
+            <span class="bold">${data.clientName || ''}</span>
+          </div>
+          ${data.clientPhone ? `<div class="info-row"><span>Tel:</span><span>${data.clientPhone}</span></div>` : ''}
+          <div class="info-row">
+            <span>Atendió:</span>
+            <span>${data.staffName || ''}</span>
+          </div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
+          ${(data.items || []).map((item: any) => `
+            <div class="item-row">
+              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+              <span>$${Number(item.subtotal).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="double-separator"></div>
+        
+        <div class="total-row">
+          <span>TOTAL:</span>
+          <span>$${Number(data.estimatedTotal || 0).toFixed(2)}</span>
+        </div>
+        
+        <div class="info-row" style="margin-top: 4px;">
+          <span>Pago:</span>
+          <span>${paymentLabels[data.paymentMethod] || data.paymentMethod}</span>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div style="margin: 6px 0;">
+          <div class="bold">ENTREGA:</div>
+          <div class="center" style="font-size: 13px;">
+            ${format(data.deliveryDate, "EEEE dd/MM", { locale: es })}
+          </div>
+          <div class="center bold" style="font-size: 14px;">
+            ${data.deliveryTimeStr || ''} hrs
+          </div>
+        </div>
+        
+        ${data.notes ? `<div class="notes">Notas: ${data.notes}</div>` : ''}
+        
+        <div class="double-separator"></div>
+        
+        <div class="footer">
+          <div>¡Gracias por su preferencia!</div>
+          <div>Puede revisar su servicio en nuestro sitio web</div>
+          <div>lavanderiaangy.vercel.app/</div>
+          <div style="margin-top: 4px;">Conserve este ticket</div>
+        </div>
+        
+        </div> <!-- cierre receipt-container -->
+        
         <script>
-          document.addEventListener('DOMContentLoaded', function() {
+          window.onload = function() {
             window.print();
-          });
+            setTimeout(function() { window.close(); }, 500);
+          };
           window.onafterprint = function() {
             window.close();
           };
