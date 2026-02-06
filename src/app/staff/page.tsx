@@ -795,7 +795,8 @@ export default function StaffDashboard() {
         </style>
       </head>
       <body>
-        <div class="receipt-container">
+        ${(() => {
+          const receiptBody = `<div class="receipt-container">
         <div class="header">
           <div class="logo">LAVANDERÍA Y PLANCHADURIA ANGY</div>
           <div class="subtitle">Servicio de Calidad</div>
@@ -869,7 +870,9 @@ export default function StaffDashboard() {
           <div style="margin-top: 4px;">Conserve este ticket</div>
         </div>
         
-        </div> <!-- cierre receipt-container -->
+        </div>`;
+          return receiptBody + receiptBody;
+        })()}
         
         <script>
           window.onload = function() {
