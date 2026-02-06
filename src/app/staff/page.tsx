@@ -660,7 +660,7 @@ export default function StaffDashboard() {
       'transferencia': 'Transferencia',
       'pagar_al_retiro': 'Pago Pendiente'
     };
-    const printWindow = window.open('', '_blank', 'width=250,height=600');
+    const printWindow = window.open('', '_blank', 'width=600,height=600');
     if (!printWindow) {
       toast({ title: "Error", description: "No se pudo abrir la ventana de impresión. Verifica los bloqueadores de pop-ups.", variant: "destructive" });
       return;
@@ -674,11 +674,11 @@ export default function StaffDashboard() {
         <title>Recibo #${data.id}</title>
         <style>
           @page { size: 58mm auto; margin: 0; }
-          html, body { width: 58mm; margin: 0; padding: 0; }
-          body { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; margin: 0; padding: 0 2mm; line-height: 1.2; }
+          html, body { width: 58mm; margin: 0; padding: 0; height: auto; }
+          body { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; margin: 0; padding: 2mm 3mm 3mm 3mm; line-height: 1.2; font-weight: 900; height: auto; }
           .r { text-align: right; }
           .c { text-align: center; }
-          .b { font-weight: bold; }
+          .b { font-weight: 900; }
           .s { font-size: 9px; }
           .box { border-top:1px dashed #000; margin:3px 0; }
           .spacer { height: 2px; }
@@ -714,6 +714,9 @@ export default function StaffDashboard() {
           document.addEventListener('DOMContentLoaded', function() {
             window.print();
           });
+          window.onafterprint = function() {
+            window.close();
+          };
         </script>
       </body>
       </html>
