@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, useFirestore } from '@/firebase/provider';
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, getDocs } from "firebase/firestore";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -72,41 +72,97 @@ export default function HistoryPage() {
 
   // Cargar historial
   useEffect(() => {
-    if (!firestore || !auth?.currentUser) return;
+    const currentUser = auth?.currentUser;
+    if (!firestore || !currentUser) return;
 
-    const q = query(
+    let isMounted = true;
+    let unsubUserId: (() => void) | null = null;
+    let unsubClientId: (() => void) | null = null;
+    let userIdOrders = new Map<string, any>();
+    let clientIdOrders = new Map<string, any>();
+
+    const rebuild = () => {
+      if (!isMounted) return;
+      const merged = new Map<string, any>([...clientIdOrders, ...userIdOrders]);
+      const items = Array.from(merged.values());
+      items.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setOrders(items);
+      setLoading(false);
+    };
+
+    const subscribe = async () => {
+      const uid = currentUser.uid;
+
+      const qByUserId = query(
         collection(firestore, 'orders'),
-        where('userId', '==', auth.currentUser.uid),
-        orderBy('createdAt', 'desc')
-    );
+        where('userId', '==', uid)
+      );
 
-    const unsub = onSnapshot(q, (snap) => {
-        const items: any[] = [];
-        snap.forEach(doc => {
-            items.push({ id: doc.id, ...doc.data() });
+      unsubUserId = onSnapshot(qByUserId, (snap) => {
+        userIdOrders = new Map();
+        snap.docs.forEach(doc => userIdOrders.set(doc.id, { id: doc.id, ...doc.data() }));
+        rebuild();
+      }, (err) => {
+        console.error("Error fetching history by userId:", err);
+        setLoading(false);
+      });
+
+      let userDocId: string | null = null;
+      try {
+        const userSnap = await getDocs(query(
+          collection(firestore, 'users'),
+          where('authUid', '==', uid)
+        ));
+        if (!userSnap.empty) {
+          userDocId = userSnap.docs[0].id;
+        }
+      } catch (err) {
+        console.error('Error resolving user:', err);
+      }
+
+      if (userDocId) {
+        const qByClientId = query(
+          collection(firestore, 'orders'),
+          where('clientId', '==', userDocId)
+        );
+
+        unsubClientId = onSnapshot(qByClientId, (snap) => {
+          clientIdOrders = new Map();
+          snap.docs.forEach(doc => clientIdOrders.set(doc.id, { id: doc.id, ...doc.data() }));
+          rebuild();
+        }, (err) => {
+          console.error("Error fetching history by clientId:", err);
+          setLoading(false);
         });
-        setOrders(items);
-        setLoading(false);
-    }, (err) => {
-        console.error("Error fetching history:", err);
-        setLoading(false);
-    });
+      } else {
+        rebuild();
+      }
+    };
 
-    return () => unsub();
+    subscribe();
+
+    return () => {
+      isMounted = false;
+      if (unsubUserId) unsubUserId();
+      if (unsubClientId) unsubClientId();
+    };
   }, [firestore, auth]);
 
-  // Filtrado
   const filteredOrders = useMemo(() => {
-      return orders.filter(order => {
-          const matchesSearch = (order.serviceName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                (order.id || '').toLowerCase().includes(searchQuery.toLowerCase());
-          
-          if (statusFilter === 'all') return matchesSearch;
-          if (statusFilter === 'completed') return matchesSearch && (order.status === 'entregado' || order.status === 'completado');
-          if (statusFilter === 'pending') return matchesSearch && (order.status !== 'entregado' && order.status !== 'completado' && order.status !== 'cancelado');
-          
-          return matchesSearch;
-      });
+    return orders.filter((order) => {
+      const matchesSearch = (order.serviceName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (order.id || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (statusFilter === 'all') return matchesSearch;
+      if (statusFilter === 'completed') return matchesSearch && (order.status === 'entregado' || order.status === 'completado');
+      if (statusFilter === 'pending') return matchesSearch && (order.status !== 'entregado' && order.status !== 'completado' && order.status !== 'cancelado');
+      
+      return matchesSearch;
+    });
   }, [orders, searchQuery, statusFilter]);
 
   // Helpers de formato

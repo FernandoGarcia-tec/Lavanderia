@@ -110,9 +110,9 @@ export default function ServicesPage() {
 
   // Client Search
   const [searchTerm, setSearchTerm] = useState("");
-  const [clients, setClients] = useState<Array<{ id: string; name: string; email?: string; phone?: string }>>([]);
+  const [clients, setClients] = useState<Array<{ id: string; name: string; email?: string; phone?: string; authUid?: string }>>([]);
   const [loadingClients, setLoadingClients] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string } | null>(null);
+  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string; authUid?: string } | null>(null);
 
   // New Client Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -688,6 +688,7 @@ export default function ServicesPage() {
       deliveryDateTime.setHours(hours, minutes, 0, 0);
 
       const orderData = {
+        userId: selectedClient.authUid || selectedClient.id,
         clientId: selectedClient.id,
         clientName: selectedClient.name,
         clientEmail: selectedClient.email || null,

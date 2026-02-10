@@ -35,7 +35,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -133,45 +133,89 @@ export default function MyOrdersPage() {
       return;
     }
     
-    if (!auth?.currentUser) {
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
       console.log('Usuario no autenticado');
       setLoadingOrder(false);
       return;
     }
 
-    const uid = auth.currentUser.uid;
-    console.log('Buscando pedidos para usuario:', uid);
-    
-    // Consulta simple sin orderBy para evitar necesidad de índice compuesto
-    const q = query(
+    let isMounted = true;
+    let unsubUserId: (() => void) | null = null;
+    let unsubClientId: (() => void) | null = null;
+    let userIdOrders = new Map<string, any>();
+    let clientIdOrders = new Map<string, any>();
+
+    const rebuild = () => {
+      if (!isMounted) return;
+      const merged = new Map<string, any>([...clientIdOrders, ...userIdOrders]);
+      const orders = Array.from(merged.values());
+      orders.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setLatestOrder(orders[0] || null);
+      setLoadingOrder(false);
+    };
+
+    const subscribe = async () => {
+      const uid = currentUser.uid;
+      console.log('Buscando pedidos para usuario:', uid);
+
+      const qByUserId = query(
         collection(firestore, 'orders'),
         where('userId', '==', uid)
-    );
+      );
 
-    const unsub = onSnapshot(q, (snap) => {
-        console.log('Pedidos encontrados:', snap.size);
-        if (!snap.empty) {
-            // Ordenar manualmente por createdAt descendente
-            const orders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            orders.sort((a: any, b: any) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-            const latest = orders[0];
-            console.log('Pedido más reciente:', latest);
-            setLatestOrder(latest);
-        } else {
-            console.log('No se encontraron pedidos para este usuario');
-            setLatestOrder(null);
+      unsubUserId = onSnapshot(qByUserId, (snap) => {
+        userIdOrders = new Map();
+        snap.docs.forEach(doc => userIdOrders.set(doc.id, { id: doc.id, ...doc.data() }));
+        rebuild();
+      }, (error) => {
+        console.error('Error al cargar pedidos por userId:', error);
+        setLoadingOrder(false);
+      });
+
+      let userDocId: string | null = null;
+      try {
+        const userSnap = await getDocs(query(
+          collection(firestore, 'users'),
+          where('authUid', '==', uid)
+        ));
+        if (!userSnap.empty) {
+          userDocId = userSnap.docs[0].id;
         }
-        setLoadingOrder(false);
-    }, (error) => {
-        console.error('Error al cargar pedidos:', error);
-        setLoadingOrder(false);
-    });
+      } catch (error) {
+        console.error('Error al resolver usuario:', error);
+      }
 
-    return () => unsub();
+      if (userDocId) {
+        const qByClientId = query(
+          collection(firestore, 'orders'),
+          where('clientId', '==', userDocId)
+        );
+
+        unsubClientId = onSnapshot(qByClientId, (snap) => {
+          clientIdOrders = new Map();
+          snap.docs.forEach(doc => clientIdOrders.set(doc.id, { id: doc.id, ...doc.data() }));
+          rebuild();
+        }, (error) => {
+          console.error('Error al cargar pedidos por clientId:', error);
+          setLoadingOrder(false);
+        });
+      } else {
+        rebuild();
+      }
+    };
+
+    subscribe();
+
+    return () => {
+      isMounted = false;
+      if (unsubUserId) unsubUserId();
+      if (unsubClientId) unsubClientId();
+    };
   }, [firestore, auth?.currentUser?.uid]);
 
   // Determinar paso actual del progreso
