@@ -334,7 +334,7 @@ export default function ServicesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               to: phone,
-              body: `¡Hola ${newClientName.trim()}! 👋\n\nTu cuenta en Lavandería Angy ha sido creada.\n\nPara ingresar:\n1. Ve a https://lavanderiaangy.vercel.app\n2. Inicia sesión con tu correo o telefono: ${cleanPhone} O ${finalEmail}\n3. Tu contraseña temporal es: ${defaultPass}\n\nCámbiala después de tu primer acceso.\n\n¡Ya puedes programar tus servicios de lavandería o revisar el status de tu ropa!`
+              body: `Hola ${newClientName.trim()}, tu cuenta en Lavanderia Angy ha sido creada.\n\nUsuario: ${cleanPhone}\nContraseña: ${defaultPass}\n\nEntra en: lavanderiaangy.vercel.app\n\nCambia tu contraseña tras el primer acceso.`
             }),
           });
           toast({ title: "📱 WhatsApp enviado", description: "Se envió el mensaje de bienvenida por WhatsApp." });
