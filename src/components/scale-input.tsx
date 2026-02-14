@@ -157,7 +157,7 @@ export function ScaleInput({
                   console.log('Báscula:', line.trim());
                   const weight = parseWeight(line);
                   if (weight !== null) {
-                    onChange(weight.toFixed(2));
+                    onChange(weight.toString());
                     setIsWeighing(false);
                   }
                 }
@@ -290,7 +290,7 @@ export function ScaleInput({
   const handleStep = (delta: number) => {
     let val = parseFloat(value || '0') + delta;
     if (val < 0) val = 0;
-    onChange(val.toFixed(2));
+    onChange(val.toString());
   };
 
   // Valores rápidos comunes para lavandería
@@ -341,7 +341,7 @@ export function ScaleInput({
       {/* Valores rápidos */}
       <div className="flex gap-2 mt-1">
         {quickValues.map((v) => (
-          <Button key={v} type="button" size="sm" variant="ghost" onClick={() => onChange(v.toFixed(2))} disabled={disabled} className="rounded-lg border border-slate-200 text-base px-3 py-1 font-semibold hover:bg-cyan-50">
+          <Button key={v} type="button" size="sm" variant="ghost" onClick={() => onChange(v.toString())} disabled={disabled} className="rounded-lg border border-slate-200 text-base px-3 py-1 font-semibold hover:bg-cyan-50">
             {v} {unit === 'kg' ? 'kg' : 'pz'}
           </Button>
         ))}

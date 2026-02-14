@@ -57,6 +57,7 @@ export function useScale(options: UseScaleOptions = {}): UseScaleReturn {
   const [weight, setWeight] = useState<number | null>(null);
   const [unit, setUnit] = useState<string>('kg');
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
@@ -64,6 +65,21 @@ export function useScale(options: UseScaleOptions = {}): UseScaleReturn {
 
   // Verificar si WebSerial está disponible
   const isSupported = typeof navigator !== 'undefined' && 'serial' in navigator;
+
+  // Guardar estado del puerto en localStorage
+  const savePortInfo = useCallback((info: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('scalePortInfo', info);
+    }
+  }, []);
+
+  // Recuperar información guardada del puerto
+  const getSavedPortInfo = useCallback((): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('scalePortInfo');
+    }
+    return null;
+  }, []);
 
   // Parsear peso de la respuesta de la báscula
   const parseWeight = useCallback((data: string): { weight: number; unit: string } | null => {
@@ -164,6 +180,10 @@ export function useScale(options: UseScaleOptions = {}): UseScaleReturn {
       setIsConnected(true);
       setError(null);
       
+      // Guardar información del puerto para recordarlo
+      const portInfo = port.getInfo ? `${port.getInfo?.()?.usbVendorId || 'unknown'}` : 'remembered';
+      savePortInfo(portInfo);
+      
       // Iniciar lectura continua
       startReading();
       
@@ -184,7 +204,7 @@ export function useScale(options: UseScaleOptions = {}): UseScaleReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [isSupported, startReading]);
+  }, [isSupported, startReading, savePortInfo]);
 
   // Desconectar
   const disconnect = useCallback(async (): Promise<void> => {
@@ -242,6 +262,64 @@ export function useScale(options: UseScaleOptions = {}): UseScaleReturn {
       disconnect();
     };
   }, [disconnect]);
+
+  // Auto-reconectar cuando regresa el tab (si estaba conectado)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isConnected && !isReadingRef.current && portRef.current) {
+        // Si volvemos a la pestaña y estábamos conectados, reiniciar lectura
+        startReading().catch(err => {
+          console.error('Error al reiniciar lectura:', err);
+          setError('Se perdió la conexión con la báscula');
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isConnected, startReading]);
+
+  // Intentar reconectar automáticamente a puertos guardados al montar
+  useEffect(() => {
+    if (!isSupported || isInitialized) return;
+    
+    setIsInitialized(true);
+
+    const tryAutoConnect = async () => {
+      try {
+        if (!navigator.serial.getPorts) return;
+        
+        const ports = await navigator.serial.getPorts();
+        if (ports.length > 0) {
+          // Existe un puerto conocido, intentar conectarse automáticamente
+          const port = ports[0];
+          
+          try {
+            await port.open(SCALE_CONFIG);
+            portRef.current = port;
+            setIsConnected(true);
+            setError(null);
+            
+            // Guardar información del puerto
+            const portInfo = port.getInfo ? `${port.getInfo?.()?.usbVendorId || 'unknown'}` : 'remembered';
+            savePortInfo(portInfo);
+            
+            // Iniciar lectura
+            startReading();
+          } catch (openErr) {
+            // El puerto no se pudo abrir (desconectado o en uso)
+            console.log('No se puede reconectar automáticamente al puerto');
+          }
+        }
+      } catch (err) {
+        console.log('Error intentando auto-conexión:', err);
+      }
+    };
+
+    tryAutoConnect();
+  }, [isSupported, isInitialized, savePortInfo, startReading]);
 
   return {
     isConnected,
