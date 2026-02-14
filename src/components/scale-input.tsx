@@ -157,7 +157,10 @@ export function ScaleInput({
                   console.log('Báscula:', line.trim());
                   const weight = parseWeight(line);
                   if (weight !== null) {
-                    onChange(weight.toString());
+                    // Mantener decimales exactos sin redondear (máximo 3 decimales)
+                    const decimalPlaces = (weight.toString().split('.')[1] || '').length;
+                    const maxDecimals = Math.min(decimalPlaces, 3);
+                    onChange(weight.toFixed(maxDecimals));
                     setIsWeighing(false);
                   }
                 }
@@ -290,7 +293,10 @@ export function ScaleInput({
   const handleStep = (delta: number) => {
     let val = parseFloat(value || '0') + delta;
     if (val < 0) val = 0;
-    onChange(val.toString());
+    // Mantener precisión sin redondear innecesariamente
+    const decimalPlaces = (value.split('.')[1] || '').length;
+    const maxDecimals = Math.max(decimalPlaces, 1);
+    onChange(val.toFixed(maxDecimals));
   };
 
   // Valores rápidos comunes para lavandería
