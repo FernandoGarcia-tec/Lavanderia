@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       // Luego usa finalEmail en vez de email en la creación:
       userRecord = await auth.createUser({
         email: finalEmail,
-        password: defaultPassword || 'Cambio123!',
+        password: defaultPassword || 'Cambio123',
         displayName: name || undefined,
         ...(phone ? { phoneNumber: '+' + (cleanPhone.startsWith('52') ? cleanPhone : '52' + cleanPhone) } : {}),
       });

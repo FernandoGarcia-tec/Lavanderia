@@ -81,7 +81,7 @@ export default function UsersPage() {
   
   // Formulario Creación
   const [newUserRole, setNewUserRole] = useState<string>('client');
-  const [defaultPass, setDefaultPass] = useState<string>('Cambio123!');
+  const [defaultPass, setDefaultPass] = useState<string>('Cambio123');
   const [migrating, setMigrating] = useState<boolean>(false);
 
   // --- Carga de Datos ---

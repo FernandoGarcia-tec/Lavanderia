@@ -120,7 +120,7 @@ export default function ServicesPage() {
   const [newClientEmail, setNewClientEmail] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
-  const [defaultPass, setDefaultPass] = useState<string>('Cambio123!');
+  const [defaultPass, setDefaultPass] = useState<string>('Cambio123');
 
   // Service Selection
   const [servicesList, setServicesList] = useState<Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' }>>([]);
