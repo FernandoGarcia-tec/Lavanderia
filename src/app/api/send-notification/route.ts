@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     // Si hay mensaje personalizado, usarlo directamente
     if (customMessage) {
-      const results: { email?: boolean; whatsapp?: boolean; errors?: string[] } = { errors: [] };
+      const results: { email?: boolean; whatsapp?: boolean; sms?: boolean; errors?: string[] } = { errors: [] };
 
       // Enviar WhatsApp con mensaje personalizado
       if (channel === 'whatsapp' || channel === 'both') {
@@ -154,6 +154,56 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Enviar SMS con mensaje personalizado
+      if (channel === 'sms' || channel === 'both') {
+        if (!to.phone) {
+          results.errors?.push('No se proporcionó número de teléfono');
+        } else if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+          results.errors?.push('Twilio no está configurado');
+        } else {
+          try {
+            const accountSid = process.env.TWILIO_ACCOUNT_SID;
+            const authToken = process.env.TWILIO_AUTH_TOKEN;
+            const twilioPhoneRaw =
+              process.env.TWILIO_SMS_NUMBER ||
+              process.env.TWILIO_PHONE_NUMBER ||
+              process.env.TWILIO_WHATSAPP_NUMBER;
+            const twilioPhone = (twilioPhoneRaw || '').replace(/^whatsapp:/, '');
+
+            let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
+            if (!phoneNumber.startsWith('+')) {
+              phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
+            }
+
+            const response = await fetch(
+              `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  From: twilioPhone,
+                  To: phoneNumber,
+                  Body: customMessage,
+                }),
+              }
+            );
+
+            if (response.ok) {
+              results.sms = true;
+            } else {
+              const errorData = await response.json();
+              results.errors?.push(`SMS: ${errorData.message || 'Error desconocido'}`);
+            }
+          } catch (smsError: any) {
+            console.error('Error enviando SMS:', smsError);
+            results.errors?.push(`SMS: ${smsError.message}`);
+          }
+        }
+      }
+
       if (results.errors?.length === 0) {
         delete results.errors;
       }
@@ -161,7 +211,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         ...results,
-        message: results.whatsapp ? 'Notificación enviada' : 'No se pudo enviar la notificación'
+        message: results.whatsapp || results.sms ? 'Notificación enviada' : 'No se pudo enviar la notificación'
       });
     }
 
@@ -170,7 +220,7 @@ export async function POST(req: NextRequest) {
     }
 
     const template = status === 'aprobado' ? 'approved' : 'rejected';
-    const results: { email?: boolean; whatsapp?: boolean; errors?: string[] } = { errors: [] };
+    const results: { email?: boolean; whatsapp?: boolean; sms?: boolean; errors?: string[] } = { errors: [] };
 
     // Enviar correo electrónico
     if (channel === 'email' || channel === 'both') {
@@ -240,6 +290,56 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Enviar SMS (usando Twilio)
+    if (channel === 'sms' || channel === 'both') {
+      if (!to.phone) {
+        results.errors?.push('No se proporcionó número de teléfono');
+      } else if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+        results.errors?.push('Twilio no está configurado');
+      } else {
+        try {
+          const accountSid = process.env.TWILIO_ACCOUNT_SID;
+          const authToken = process.env.TWILIO_AUTH_TOKEN;
+          const twilioPhoneRaw =
+            process.env.TWILIO_SMS_NUMBER ||
+            process.env.TWILIO_PHONE_NUMBER ||
+            process.env.TWILIO_WHATSAPP_NUMBER;
+          const twilioPhone = (twilioPhoneRaw || '').replace(/^whatsapp:/, '');
+
+          let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
+          if (!phoneNumber.startsWith('+')) {
+            phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
+          }
+
+          const response = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                From: twilioPhone,
+                To: phoneNumber,
+                Body: whatsappTemplates[template](name),
+              }),
+            }
+          );
+
+          if (response.ok) {
+            results.sms = true;
+          } else {
+            const errorData = await response.json();
+            results.errors?.push(`SMS: ${errorData.message || 'Error desconocido'}`);
+          }
+        } catch (smsError: any) {
+          console.error('Error enviando SMS:', smsError);
+          results.errors?.push(`SMS: ${smsError.message}`);
+        }
+      }
+    }
+
     // Limpiar errores vacíos
     if (results.errors?.length === 0) {
       delete results.errors;
@@ -248,7 +348,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       ...results,
-      message: results.email || results.whatsapp 
+      message: results.email || results.whatsapp || results.sms 
         ? 'Notificación enviada' 
         : 'No se pudo enviar la notificación'
     });

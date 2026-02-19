@@ -314,22 +314,19 @@ export default function ServicesPage() {
         }
       }
 
-      // Enviar WhatsApp de bienvenida (si tiene teléfono)
+      // Enviar SMS de bienvenida (si tiene teléfono)
       if (newClientPhone.trim()) {
         try {
           let phone = cleanPhone;
-          // Fuerza el formato +521XXXXXXXXXX
-          if (!phone.startsWith('521')) {
-            // Si ya empieza con '52', lo convierte a '521'
-            if (phone.startsWith('52')) {
-              phone = '521' + phone.slice(2);
-            } else {
-              phone = '521' + phone;
-            }
+          // Fuerza formato internacional para SMS (MX por defecto)
+          if (phone.length === 10) {
+            phone = '52' + phone;
+          } else if (!phone.startsWith('52')) {
+            phone = '52' + phone;
           }
           phone = '+' + phone;
 
-          await fetch('/api/twilio-test', {
+          const smsRes = await fetch('/api/twilio-test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -337,10 +334,16 @@ export default function ServicesPage() {
               body: `Hola ${newClientName.trim()}, tu cuenta en Lavanderia Angy ha sido creada.\n\nUsuario: ${cleanPhone}\nContraseña: ${defaultPass}\n\nEntra en: lavanderiaangy.vercel.app\n\nCambia tu contraseña tras el primer acceso.`
             }),
           });
-          toast({ title: "📱 WhatsApp enviado", description: "Se envió el mensaje de bienvenida por WhatsApp." });
-        } catch (waErr) {
-          console.error('Error enviando WhatsApp:', waErr);
-          // No interrumpir el flujo si falla el WhatsApp
+
+          const smsData = await smsRes.json().catch(() => null);
+          if (!smsRes.ok || !smsData?.success) {
+            throw new Error(smsData?.error || 'No se pudo enviar el SMS de bienvenida');
+          }
+
+          toast({ title: "📲 SMS enviado", description: "Se envió el mensaje de bienvenida por SMS." });
+        } catch (smsErr) {
+          console.error('Error enviando SMS:', smsErr);
+          // No interrumpir el flujo si falla el SMS
         }
       }
 

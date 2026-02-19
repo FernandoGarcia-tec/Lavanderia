@@ -123,7 +123,7 @@ export default function UsersPage() {
 
   // --- Acciones ---
 
-  // Función auxiliar para enviar notificaciones por email/WhatsApp
+  // Función auxiliar para enviar notificaciones por email/SMS
   async function sendStatusNotification(userData: any, newStatus: string) {
     try {
       const hasEmail = userData.email && userData.email.trim();
@@ -138,7 +138,7 @@ export default function UsersPage() {
       if (hasEmail && hasPhone) {
         channel = 'both';
       } else if (hasPhone && !hasEmail) {
-        channel = 'whatsapp';
+        channel = 'sms';
       }
 
       const response = await fetch('/api/send-notification', {
@@ -160,8 +160,8 @@ export default function UsersPage() {
       if (result.email) {
         toast({ title: '📧 Correo enviado', description: `Se notificó a ${userData.email}` });
       }
-      if (result.whatsapp) {
-        toast({ title: '💬 WhatsApp enviado', description: `Se notificó al ${userData.phone}` });
+      if (result.sms) {
+        toast({ title: '📲 SMS enviado', description: `Se notificó al ${userData.phone}` });
       }
       if (result.errors?.length > 0) {
         console.warn('Errores al notificar:', result.errors);
@@ -178,7 +178,7 @@ export default function UsersPage() {
       await updateDoc(doc(firestore, 'users', uid), { status });
       toast({ title: `Usuario ${status}`, description: `El estado ha sido actualizado.` });
       
-      // Enviar notificación por correo/WhatsApp
+      // Enviar notificación por correo/SMS
       if (before && (status === 'aprobado' || status === 'rechazado')) {
         sendStatusNotification(before, status);
       }
