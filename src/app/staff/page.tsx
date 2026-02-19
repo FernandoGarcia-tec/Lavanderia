@@ -1145,11 +1145,22 @@ export default function StaffDashboard() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="hidden md:table-cell">
-                                                <div className="flex flex-col max-w-[200px]">
-                                                    <span className="font-medium text-slate-700 truncate">{order.serviceName || (order.items ? 'Varios Servicios' : 'Servicio')}</span>
-                                                    <span className="text-xs text-slate-400">
-                                                        {order.items?.length > 0 ? `${order.items.length} ítems` : `${order.quantity} ${order.unit}`}
-                                                    </span>
+                                                <div className="flex flex-col max-w-[220px]">
+                                                    {order.items && order.items.length > 0 ? (
+                                                        <div className="space-y-0.5">
+                                                            {order.items.map((item: any, idx: number) => (
+                                                                <div key={idx} className="text-sm">
+                                                                    <span className="font-medium text-slate-700">{item.serviceName}</span>
+                                                                    <span className="text-slate-400 text-xs ml-1.5">x{item.quantity}{item.unit === 'kg' ? 'kg' : ''}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <span className="font-medium text-slate-700 truncate">{order.serviceName || 'Servicio'}</span>
+                                                            <span className="text-xs text-slate-400">{order.quantity} {order.unit}</span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell">
@@ -1477,8 +1488,25 @@ export default function StaffDashboard() {
                         </div>
                     )}
                 </div>
-                <DialogFooter className="bg-slate-50 p-5 border-t border-slate-100">
-                    <Button variant="outline" className="w-full rounded-xl h-12 text-base" onClick={() => setDetailsModalOpen(false)}>Cerrar</Button>
+                <DialogFooter className="bg-slate-50 p-5 border-t border-slate-100 flex gap-3">
+                    <Button 
+                        variant="outline" 
+                        className="flex-1 rounded-xl h-12 text-base border-cyan-200 text-cyan-700 hover:bg-cyan-50 gap-2" 
+                        onClick={() => {
+                            handlePrintReceipt(detailsTarget);
+                            setDetailsModalOpen(false);
+                        }}
+                    >
+                        <Printer className="w-5 h-5" />
+                        Imprimir
+                    </Button>
+                    <Button 
+                        variant="outline" 
+                        className="flex-1 rounded-xl h-12 text-base" 
+                        onClick={() => setDetailsModalOpen(false)}
+                    >
+                        Cerrar
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
