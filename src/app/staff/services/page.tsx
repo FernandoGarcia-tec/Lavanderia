@@ -318,13 +318,12 @@ export default function ServicesPage() {
       if (newClientPhone.trim()) {
         try {
           let phone = cleanPhone;
-          // Fuerza formato internacional para SMS (MX por defecto)
+          // Fuerza formato internacional E.164 para SMS México (+521 para móviles)
           if (phone.length === 10) {
-            phone = '52' + phone;
-          } else if (!phone.startsWith('52')) {
-            phone = '52' + phone;
+            phone = '+521' + phone;
+          } else if (!phone.startsWith('+')) {
+            phone = '+' + phone;
           }
-          phone = '+' + phone;
 
           const smsRes = await fetch('/api/twilio-test', {
             method: 'POST',

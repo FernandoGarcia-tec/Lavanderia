@@ -22,9 +22,13 @@ export async function POST(req: NextRequest) {
     }
 
     const from = fromRaw.startsWith('whatsapp:') ? fromRaw.replace('whatsapp:', '') : fromRaw;
-    const toNormalized = String(to).trim().startsWith('+')
-      ? String(to).trim()
-      : `+${String(to).replace(/[^0-9]/g, '')}`;
+    
+    // Normalizar número destino a E.164 (para MX: +521 en móviles de 10 dígitos)
+    let toNormalized = String(to).trim();
+    if (!toNormalized.startsWith('+')) {
+      const digits = toNormalized.replace(/[^0-9]/g, '');
+      toNormalized = digits.length === 10 ? `+521${digits}` : `+${digits}`;
+    }
 
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const message = await client.messages.create({

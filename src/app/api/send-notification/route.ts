@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
             let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
             if (!phoneNumber.startsWith('+')) {
-              phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
+              phoneNumber = phoneNumber.length === 10 ? `+521${phoneNumber}` : `+${phoneNumber}`;
             }
 
             const response = await fetch(
@@ -308,7 +308,7 @@ export async function POST(req: NextRequest) {
 
           let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
           if (!phoneNumber.startsWith('+')) {
-            phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
+            phoneNumber = phoneNumber.length === 10 ? `+521${phoneNumber}` : `+${phoneNumber}`;
           }
 
           const response = await fetch(
