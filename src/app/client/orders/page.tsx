@@ -407,9 +407,18 @@ export default function MyOrdersPage() {
                                             <span className="text-sm text-slate-600">Total a Pagar</span>
                                           </div>
                                           <p className="text-3xl font-bold text-cyan-700">${Number(latestOrder.estimatedTotal).toFixed(2)}</p>
-                                          <Badge variant="outline" className={`mt-2 ${latestOrder.paymentStatus === 'pagado' ? 'text-green-600 border-green-200 bg-green-50' : 'text-amber-600 border-amber-200 bg-amber-50'}`}>
-                                              {latestOrder.paymentStatus === 'pagado' ? 'Pagado' : 'Pago Pendiente'}
-                                          </Badge>
+                                          {(() => {
+                                            const isPayOnPickup = latestOrder.paymentMethod === 'pagar_al_retiro';
+                                            const isPaid = latestOrder.paymentStatus === 'pagado' || !isPayOnPickup;
+                                            return (
+                                              <Badge
+                                                variant="outline"
+                                                className={`mt-2 ${isPaid ? 'text-green-600 border-green-200 bg-green-50' : 'text-amber-600 border-amber-200 bg-amber-50'}`}
+                                              >
+                                                {isPaid ? 'Pagado' : 'Pago Pendiente'}
+                                              </Badge>
+                                            );
+                                          })()}
                                         </>
                                       ) : (
                                         <div className="text-center py-2">
