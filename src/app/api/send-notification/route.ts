@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
 
             let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
             if (!phoneNumber.startsWith('+')) {
-              phoneNumber = '+521' + phoneNumber;
+              phoneNumber = '+52' + phoneNumber;
             }
 
             const response = await fetch(
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
             let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
             if (!phoneNumber.startsWith('+')) {
-              phoneNumber = phoneNumber.length === 10 ? `+521${phoneNumber}` : `+${phoneNumber}`;
+              phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
             }
 
             const response = await fetch(
@@ -258,7 +258,7 @@ export async function POST(req: NextRequest) {
           // Formatear número de teléfono (agregar código de país si no lo tiene)
           let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
           if (!phoneNumber.startsWith('+')) {
-            phoneNumber = '+521' + phoneNumber; // Código de México por defecto para WhatsApp
+            phoneNumber = '+52' + phoneNumber; // Código de México por defecto para WhatsApp
           }
 
           const response = await fetch(
@@ -308,7 +308,7 @@ export async function POST(req: NextRequest) {
 
           let phoneNumber = to.phone.replace(/\s+/g, '').replace(/-/g, '');
           if (!phoneNumber.startsWith('+')) {
-            phoneNumber = phoneNumber.length === 10 ? `+521${phoneNumber}` : `+${phoneNumber}`;
+            phoneNumber = phoneNumber.length === 10 ? `+52${phoneNumber}` : `+${phoneNumber}`;
           }
 
           const response = await fetch(

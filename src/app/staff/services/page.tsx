@@ -318,9 +318,9 @@ export default function ServicesPage() {
       if (newClientPhone.trim()) {
         try {
           let phone = cleanPhone;
-          // Fuerza formato internacional E.164 para SMS México (+521 para móviles)
+          // Fuerza formato internacional E.164 para SMS México (+52 para 10 dígitos)
           if (phone.length === 10) {
-            phone = '+521' + phone;
+            phone = '+52' + phone;
           } else if (!phone.startsWith('+')) {
             phone = '+' + phone;
           }
@@ -336,12 +336,18 @@ export default function ServicesPage() {
 
           const smsData = await smsRes.json().catch(() => null);
           if (!smsRes.ok || !smsData?.success) {
-            throw new Error(smsData?.error || 'No se pudo enviar el SMS de bienvenida');
+            const errorMessage = smsData?.error || `No se pudo enviar el SMS (status ${smsRes.status})`;
+            throw new Error(errorMessage);
           }
 
           toast({ title: "📲 SMS enviado", description: "Se envió el mensaje de bienvenida por SMS." });
-        } catch (smsErr) {
+        } catch (smsErr: any) {
           console.error('Error enviando SMS:', smsErr);
+          toast({
+            title: "Error SMS",
+            description: smsErr?.message || "No se pudo enviar el SMS de bienvenida.",
+            variant: "destructive",
+          });
           // No interrumpir el flujo si falla el SMS
         }
       }
