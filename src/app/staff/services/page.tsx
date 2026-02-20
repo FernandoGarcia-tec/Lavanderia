@@ -419,13 +419,19 @@ export default function ServicesPage() {
         return;
     }
 
+    const isCargaUnit = tempService.unit === 'carga';
+    if (isCargaUnit && q < 1) {
+      toast({ title: "Cantidad invalida", description: "La carga debe ser un número entero mayor o igual a 1", variant: "destructive" });
+      return;
+    }
+
     const isLaundry = tempService.name.toLowerCase().includes('lav');
     const isKg = tempService.unit === 'kg';
     const useCarga = isLaundry && isKg && q < 3;
     const unit = useCarga ? 'carga' : tempService.unit;
     const priceUnit = useCarga ? 50 : tempService.price;
-    const quantity = useCarga ? 1 : q;
-    const subtotal = useCarga ? 50 : q * tempService.price;
+    const quantity = useCarga ? 1 : (isCargaUnit ? Math.trunc(q) : q);
+    const subtotal = useCarga ? 50 : quantity * tempService.price;
 
     const newItem: CartItem = {
       serviceId: tempService.id,
@@ -627,7 +633,7 @@ export default function ServicesPage() {
           <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
           ${lastOrder.items.map(item => `
             <div class="item-row">
-              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pz'}</span>
+              <span class="item-name">${item.serviceName} x${item.unit === 'carga' ? Math.trunc(item.quantity) : item.quantity}${item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pz'}</span>
               <span>$${item.subtotal.toFixed(2)}</span>
             </div>
           `).join('')}
@@ -1042,7 +1048,7 @@ export default function ServicesPage() {
                                 <div>
                                   <p className="font-medium text-slate-800 text-sm lg:text-base">{item.serviceName} {item.isCustom && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Manual</span>}</p>
                                   <p className="text-xs lg:text-sm text-slate-500">
-                                    {item.quantity} {item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pza'} x ${item.priceUnit}
+                                    {item.unit === 'carga' ? Math.trunc(item.quantity) : item.quantity} {item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pza'} x ${item.priceUnit}
                                   </p>
                                 </div>
                               </div>
