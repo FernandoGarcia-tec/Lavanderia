@@ -303,7 +303,7 @@ export default function ManageServicesPage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200 shadow-none">
-                                                            {svc.unit === 'kg' ? 'Por Kilo' : svc.unit === 'pieces' ? 'Por Pieza' : svc.unit}
+                                                            {svc.unit === 'kg' ? 'Por Kilo' : svc.unit === 'pieces' ? 'Por Pieza' : svc.unit === 'carga' ? 'Por Carga' : svc.unit}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right pr-6">
@@ -358,6 +358,7 @@ export default function ManageServicesPage() {
                                                 <SelectContent>
                                                     <SelectItem value="kg">Por Kilo</SelectItem>
                                                     <SelectItem value="pieces">Por Pieza</SelectItem>
+                                                    <SelectItem value="carga">Por Carga</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -401,6 +402,7 @@ export default function ManageServicesPage() {
                                         <SelectContent>
                                             <SelectItem value="kg">Por Kilo</SelectItem>
                                             <SelectItem value="pieces">Por Pieza</SelectItem>
+                                            <SelectItem value="carga">Por Carga</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

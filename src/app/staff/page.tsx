@@ -575,7 +575,7 @@ export default function StaffDashboard() {
             <div className="font-bold">SERVICIOS:</div>
             {(data.items || []).map((item: any, idx: number) => (
               <div key={idx} className="flex justify-between text-xs">
-                <span>{item.serviceName} x{item.quantity}{item.unit === 'kg' ? 'kg' : 'pz'}</span>
+                <span>{item.serviceName} x{item.quantity}{item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pz'}</span>
                 <span>${Number(item.subtotal).toFixed(2)}</span>
               </div>
             ))}
@@ -829,7 +829,7 @@ export default function StaffDashboard() {
           <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
           ${(data.items || []).map((item: any) => `
             <div class="item-row">
-              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pz'}</span>
               <span>$${Number(item.subtotal).toFixed(2)}</span>
             </div>
           `).join('')}
@@ -1151,7 +1151,7 @@ export default function StaffDashboard() {
                                                             {order.items.map((item: any, idx: number) => (
                                                                 <div key={idx} className="text-sm">
                                                                     <span className="font-medium text-slate-700">{item.serviceName}</span>
-                                                                    <span className="text-slate-400 text-xs ml-1.5">x{item.quantity}{item.unit === 'kg' ? 'kg' : ''}</span>
+                                                                    <span className="text-slate-400 text-xs ml-1.5">x{item.quantity}{item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : ''}</span>
                                                                 </div>
                                                             ))}
                                                         </div>

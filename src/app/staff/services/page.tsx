@@ -123,7 +123,7 @@ export default function ServicesPage() {
   const [defaultPass, setDefaultPass] = useState<string>('Cambio123');
 
   // Service Selection
-  const [servicesList, setServicesList] = useState<Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' }>>([]);
+  const [servicesList, setServicesList] = useState<Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' | 'carga' }>>([]);
   const [tempServiceId, setTempServiceId] = useState<string>('');
   const [tempQuantity, setTempQuantity] = useState<string>('');
   
@@ -176,10 +176,11 @@ export default function ServicesPage() {
     const fetchServices = async () => {
       try {
         const snap = await getDocs(collection(firestore, 'services'));
-        const items: Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' }> = [];
+        const items: Array<{ id: string; name: string; price: number; unit: 'kg' | 'pieces' | 'carga' }> = [];
         snap.forEach(d => {
           const data = d.data() as any;
-          items.push({ id: d.id, name: data.name, price: Number(data.price || 0), unit: (data.unit === 'pieces' ? 'pieces' : 'kg') });
+          const unit = data.unit === 'pieces' ? 'pieces' : data.unit === 'carga' ? 'carga' : 'kg';
+          items.push({ id: d.id, name: data.name, price: Number(data.price || 0), unit });
         });
         setServicesList(items);
       } catch (err: any) {
@@ -418,14 +419,22 @@ export default function ServicesPage() {
         return;
     }
 
+    const isLaundry = tempService.name.toLowerCase().includes('lav');
+    const isKg = tempService.unit === 'kg';
+    const useCarga = isLaundry && isKg && q < 3;
+    const unit = useCarga ? 'carga' : tempService.unit;
+    const priceUnit = useCarga ? 50 : tempService.price;
+    const quantity = useCarga ? 1 : q;
+    const subtotal = useCarga ? 50 : q * tempService.price;
+
     const newItem: CartItem = {
-        serviceId: tempService.id,
-        serviceName: tempService.name,
-        unit: tempService.unit,
-        priceUnit: tempService.price,
-        quantity: q,
-        subtotal: q * tempService.price,
-        isCustom: false
+      serviceId: tempService.id,
+      serviceName: tempService.name,
+      unit,
+      priceUnit,
+      quantity,
+      subtotal,
+      isCustom: false
     };
 
     setCart([...cart, newItem]);
@@ -618,7 +627,7 @@ export default function ServicesPage() {
           <div class="bold" style="margin-bottom: 4px;">SERVICIOS:</div>
           ${lastOrder.items.map(item => `
             <div class="item-row">
-              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : 'pz'}</span>
+              <span class="item-name">${item.serviceName} x${item.quantity}${item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pz'}</span>
               <span>$${item.subtotal.toFixed(2)}</span>
             </div>
           `).join('')}
@@ -702,7 +711,10 @@ export default function ServicesPage() {
         clientEmail: selectedClient.email || null,
         clientPhone: selectedClient.phone || null, // <--- GUARDAR TELÉFONO EN EL PEDIDO
         items: cart,
-        serviceName: cart.length === 1 ? cart[0].serviceName : 'Varios Servicios',
+        serviceName:
+          cart.length === 1
+            ? `${cart[0].serviceName}${cart[0].unit === 'carga' ? ' (carga)' : ''}`
+            : 'Varios Servicios',
         estimatedTotal: parseFloat(cartTotal),
         paymentMethod,
         notes: notes.trim(),
@@ -995,7 +1007,7 @@ export default function ServicesPage() {
                                         label={tempService ? `Cantidad de ${tempService.name}` : 'Selecciona un servicio arriba'}
                                         value={tempQuantity}
                                         onChange={setTempQuantity}
-                                        unit={tempService?.unit || 'kg'}
+                                        unit={(tempService?.unit === 'carga' ? 'kg' : tempService?.unit) || 'kg'}
                                         placeholder="0"
                                         disabled={!tempService}
                                         className="h-12 lg:h-14 rounded-xl border-slate-200 pl-4 text-lg lg:text-xl font-medium bg-white"
@@ -1030,7 +1042,7 @@ export default function ServicesPage() {
                                 <div>
                                   <p className="font-medium text-slate-800 text-sm lg:text-base">{item.serviceName} {item.isCustom && <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Manual</span>}</p>
                                   <p className="text-xs lg:text-sm text-slate-500">
-                                    {item.quantity} {item.unit === 'kg' ? 'kg' : 'pza'} x ${item.priceUnit}
+                                    {item.quantity} {item.unit === 'kg' ? 'kg' : item.unit === 'carga' ? 'carga' : 'pza'} x ${item.priceUnit}
                                   </p>
                                 </div>
                               </div>
