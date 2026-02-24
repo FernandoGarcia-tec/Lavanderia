@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Scale, Usb, RefreshCw, X, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +72,137 @@ const WEIGHT_PATTERNS = [
   /^([+-]?\d+\.?\d*)$/,
 ];
 
+type WeightListener = (weight: number) => void;
+
+let sharedPort: SerialPort | null = null;
+let sharedReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+let sharedIsReading = false;
+const sharedWeightListeners = new Set<WeightListener>();
+
+const parseWeightFromData = (data: string): number | null => {
+  for (const pattern of WEIGHT_PATTERNS) {
+    const match = data.match(pattern);
+    if (match && match[1]) {
+      const weightValue = parseFloat(match[1]);
+      if (!isNaN(weightValue) && weightValue >= 0) {
+        return weightValue;
+      }
+    }
+  }
+  return null;
+};
+
+const notifyWeightListeners = (weight: number) => {
+  for (const listener of sharedWeightListeners) {
+    try {
+      listener(weight);
+    } catch (err) {
+      console.error('Error notificando peso:', err);
+    }
+  }
+};
+
+const startSharedReading = async () => {
+  if (!sharedPort || sharedIsReading) return;
+
+  sharedIsReading = true;
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (sharedPort?.readable && sharedIsReading) {
+      sharedReader = sharedPort.readable.getReader();
+
+      try {
+        while (true) {
+          const { value: chunk, done } = await sharedReader.read();
+
+          if (done) break;
+
+          if (chunk) {
+            buffer += decoder.decode(chunk, { stream: true });
+            const lines = buffer.split(/[\r\n]+/);
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const parsedWeight = parseWeightFromData(line);
+              if (parsedWeight !== null) {
+                notifyWeightListeners(parsedWeight);
+              }
+            }
+          }
+        }
+      } catch (readError: any) {
+        if (readError?.name !== 'NetworkError') {
+          console.error('Error leyendo báscula:', readError);
+        }
+      } finally {
+        try {
+          sharedReader?.releaseLock();
+        } catch {}
+        sharedReader = null;
+      }
+    }
+  } catch (err) {
+    console.error('Error en ciclo de lectura compartido:', err);
+  }
+
+  sharedIsReading = false;
+};
+
+const stopSharedReading = async () => {
+  sharedIsReading = false;
+  if (sharedReader) {
+    try {
+      await sharedReader.cancel();
+    } catch {}
+    sharedReader = null;
+  }
+};
+
+const ensureKnownPortConnection = async () => {
+  if (sharedPort) {
+    startSharedReading();
+    return true;
+  }
+
+  if (typeof navigator === 'undefined' || !('serial' in navigator) || !navigator.serial.getPorts) {
+    return false;
+  }
+
+  const ports = await navigator.serial.getPorts();
+  if (!ports.length) {
+    return false;
+  }
+
+  const knownPort = ports[0];
+  try {
+    await knownPort.open(SCALE_CONFIG);
+  } catch (err: any) {
+    if (err?.name !== 'InvalidStateError') {
+      throw err;
+    }
+  }
+
+  sharedPort = knownPort;
+  startSharedReading();
+  return true;
+};
+
+const closeSharedConnection = async () => {
+  await stopSharedReading();
+
+  if (sharedPort) {
+    try {
+      await sharedPort.close();
+    } catch (err) {
+      console.error('Error al cerrar puerto compartido:', err);
+    }
+    sharedPort = null;
+  }
+};
+
 interface ScaleInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -105,83 +236,8 @@ export function ScaleInput({
   const [isConnecting, setIsConnecting] = useState(false);
   const [isWeighing, setIsWeighing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Referencias para WebSerial
-  const portRef = useRef<SerialPort | null>(null);
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
-  const isReadingRef = useRef(false);
 
   const isSupported = typeof navigator !== 'undefined' && 'serial' in navigator;
-
-  // Parsear peso de los datos recibidos
-  const parseWeight = useCallback((data: string): number | null => {
-    for (const pattern of WEIGHT_PATTERNS) {
-      const match = data.match(pattern);
-      if (match && match[1]) {
-        const weightValue = parseFloat(match[1]);
-        if (!isNaN(weightValue) && weightValue >= 0) {
-          return weightValue;
-        }
-      }
-    }
-    return null;
-  }, []);
-
-  // Leer datos del puerto serial
-  const startReading = useCallback(async () => {
-    if (!portRef.current || isReadingRef.current) return;
-    
-    isReadingRef.current = true;
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    try {
-      while (portRef.current?.readable && isReadingRef.current) {
-        readerRef.current = portRef.current.readable.getReader();
-        
-        try {
-          while (true) {
-            const { value: chunk, done } = await readerRef.current.read();
-            
-            if (done) break;
-            
-            if (chunk) {
-              buffer += decoder.decode(chunk, { stream: true });
-              
-              // Buscar líneas completas
-              const lines = buffer.split(/[\r\n]+/);
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (line.trim()) {
-                  console.log('Báscula:', line.trim());
-                  const weight = parseWeight(line);
-                  if (weight !== null) {
-                    // Mantener decimales exactos sin redondear (máximo 3 decimales)
-                    const decimalPlaces = (weight.toString().split('.')[1] || '').length;
-                    const maxDecimals = Math.min(decimalPlaces, 3);
-                    onChange(weight.toFixed(maxDecimals));
-                    setIsWeighing(false);
-                  }
-                }
-              }
-            }
-          }
-        } catch (readError: any) {
-          if (readError.name !== 'NetworkError') {
-            console.error('Error leyendo:', readError);
-          }
-        } finally {
-          readerRef.current?.releaseLock();
-          readerRef.current = null;
-        }
-      }
-    } catch (err) {
-      console.error('Error en ciclo de lectura:', err);
-    }
-    
-    isReadingRef.current = false;
-  }, [parseWeight, onChange]);
 
   // Conectar a la báscula
   const connect = async () => {
@@ -194,16 +250,21 @@ export function ScaleInput({
     setError(null);
 
     try {
+      if (sharedPort) {
+        setIsConnected(true);
+        setError(null);
+        startSharedReading();
+        return;
+      }
+
       const port = await navigator.serial.requestPort();
       await port.open(SCALE_CONFIG);
-      
-      portRef.current = port;
+
+      sharedPort = port;
       setIsConnected(true);
       setError(null);
-      
-      // Iniciar lectura continua
-      startReading();
-      
+
+      startSharedReading();
     } catch (err: any) {
       console.error('Error conectando:', err);
       
@@ -223,28 +284,13 @@ export function ScaleInput({
 
   // Desconectar
   const disconnect = async () => {
-    isReadingRef.current = false;
-    
-    try {
-      if (readerRef.current) {
-        await readerRef.current.cancel();
-        readerRef.current = null;
-      }
-      
-      if (portRef.current) {
-        await portRef.current.close();
-        portRef.current = null;
-      }
-    } catch (err) {
-      console.error('Error al desconectar:', err);
-    }
-    
+    await closeSharedConnection();
     setIsConnected(false);
   };
 
   // Solicitar peso con comando P (Print)
   const requestWeight = async () => {
-    if (!portRef.current?.writable) {
+    if (!sharedPort?.writable) {
       setError('La báscula no está conectada.');
       return;
     }
@@ -253,7 +299,7 @@ export function ScaleInput({
     setError(null);
 
     try {
-      const writer = portRef.current.writable.getWriter();
+      const writer = sharedPort.writable.getWriter();
       const encoder = new TextEncoder();
       
       // Comando P (Print) - Funciona con Rhino BAR-9
@@ -271,12 +317,49 @@ export function ScaleInput({
     }
   };
 
-  // Cleanup al desmontar
+  // Suscribirse a peso recibido por el lector compartido
   useEffect(() => {
-    return () => {
-      disconnect();
+    const handleWeight: WeightListener = (newWeight) => {
+      const decimalPlaces = (newWeight.toString().split('.')[1] || '').length;
+      const maxDecimals = Math.min(decimalPlaces, 3);
+      onChange(newWeight.toFixed(maxDecimals));
+      setIsWeighing(false);
     };
-  }, []);
+
+    sharedWeightListeners.add(handleWeight);
+
+    return () => {
+      sharedWeightListeners.delete(handleWeight);
+    };
+  }, [onChange]);
+
+  // Reconexión automática a puertos previamente autorizados
+  useEffect(() => {
+    if (!isSupported) return;
+
+    let isMounted = true;
+
+    const autoReconnect = async () => {
+      try {
+        const reconnected = await ensureKnownPortConnection();
+        if (isMounted && reconnected) {
+          setIsConnected(true);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (!isMounted) return;
+        if (err?.name === 'NetworkError') {
+          setError('El puerto está en uso por otra aplicación.');
+        }
+      }
+    };
+
+    autoReconnect();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isSupported]);
 
   const handleConnect = async () => {
     if (isConnected) {
